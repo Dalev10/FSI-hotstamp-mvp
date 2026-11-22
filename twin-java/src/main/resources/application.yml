@@ -32,6 +32,7 @@ twin:
   commands:
     setpoint-max-step-c: 5.0
     pid-max-step-fraction: 0.20
+    pid-min-step-range-fraction: 0.05      # el paso de una ganancia también puede llegar al 5 % de su rango
     kp: { min: 0.5, max: 60.0 }
     ki: { min: 0.0, max: 2.0 }
     kd: { min: 0.0, max: 120.0 }

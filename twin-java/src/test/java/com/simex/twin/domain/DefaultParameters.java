@@ -1,6 +1,11 @@
 package com.simex.twin.domain;
 
+import com.simex.twin.domain.control.ControlParameters;
+import com.simex.twin.domain.control.ProcessParameters;
+import com.simex.twin.domain.control.command.CommandLimits;
+import com.simex.twin.domain.control.safety.SafetyParameters;
 import com.simex.twin.domain.control.thermal.ColdJunctionMode;
+import com.simex.twin.domain.control.thermal.ControlMode;
 import com.simex.twin.domain.control.thermal.FirmwareParameters;
 import com.simex.twin.domain.control.thermal.LegacyParameters;
 import com.simex.twin.domain.control.thermal.PidParameters;
@@ -9,6 +14,7 @@ import com.simex.twin.domain.plant.conveyor.ConveyorParameters;
 import com.simex.twin.domain.plant.pneumatics.PneumaticParameters;
 import com.simex.twin.domain.plant.sensing.SensingParameters;
 import com.simex.twin.domain.plant.thermal.ThermalParameters;
+import com.simex.twin.domain.shared.DutyCycle;
 import com.simex.twin.domain.shared.SimDuration;
 
 /**
@@ -56,5 +62,38 @@ public final class DefaultParameters {
 
     public static LegacyParameters legacy() {
         return new LegacyParameters(new SimDuration(1010), 50.0);
+    }
+
+    public static ProcessParameters process() {
+        return new ProcessParameters(
+                50.0, 75.0, 0.5, new SimDuration(2000), 62.5, new SimDuration(900_000), new SimDuration(120_000));
+    }
+
+    public static CommandLimits commandLimits() {
+        return new CommandLimits(
+                50.0,
+                75.0,
+                5.0,
+                0.20,
+                0.05,
+                new CommandLimits.Range(0.5, 60.0),
+                new CommandLimits.Range(0.0, 2.0),
+                new CommandLimits.Range(0.0, 120.0),
+                new CommandLimits.Range(0.4, 1.0),
+                0.2);
+    }
+
+    public static ControlParameters control() {
+        return new ControlParameters(
+                firmware(),
+                pid(),
+                legacy(),
+                SSR_WINDOW,
+                ControlMode.PID,
+                new DutyCycle(0.7),
+                process(),
+                new SafetyParameters(4090, 90.0, new SimDuration(1500), 10_000),
+                new SimDuration(1000),
+                commandLimits());
     }
 }
