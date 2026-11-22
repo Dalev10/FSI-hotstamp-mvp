@@ -2,8 +2,9 @@ package com.simex.twin.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.simex.twin.domain.DefaultParameters;
+import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.ControlMode;
-import com.simex.twin.domain.plant.sensing.ColdJunctionMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,6 +35,18 @@ class TwinPropertiesTest {
         });
     }
 
+    /** Guardia: las pruebas del dominio usan {@link DefaultParameters}; deben coincidir con application.yml. */
+    @Test
+    void domainTestFixtureMatchesApplicationYml() {
+        runner.run(ctx -> {
+            TwinProperties p = ctx.getBean(TwinProperties.class);
+            assertThat(p.engine().tickMs()).isEqualTo(DefaultParameters.TICK.ms());
+            assertThat(p.thermal().toParameters()).isEqualTo(DefaultParameters.thermal());
+            assertThat(p.sensing().toPlantParameters()).isEqualTo(DefaultParameters.sensing());
+            assertThat(p.sensing().toFirmwareParameters()).isEqualTo(DefaultParameters.firmware());
+        });
+    }
+
     @Test
     void emptyAutostartScenarioIsAllowed() {
         runner.withPropertyValues("twin.autostart.scenario=")
@@ -60,6 +73,10 @@ class TwinPropertiesTest {
                 "twin.process.window-min-c=80",
                 "twin.process.default-setpoint-c=80",
                 "twin.thermal.heater-efficiency=1.5",
+                "twin.thermal.capacitance-j-per-k=0.5",
+                "twin.thermal.sensor-tau-ms=100",
+                "twin.thermal.transport-delay-ms=5050",
+                "twin.sensing.adc-bits=31",
                 "twin.sensing.open-tc-counts-threshold=5000",
                 "twin.conveyor.station-at-m=0.5",
                 "twin.conveyor.discard-face-to-m=-0.02",
