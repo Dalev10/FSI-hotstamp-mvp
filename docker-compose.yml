@@ -1,0 +1,27 @@
+# Sistema local: el gateway publica el 8080; el gemelo no publica puertos (sección 12 del plan).
+# Requiere TWIN_API_KEY (copia .env.example a .env y pon una clave propia).
+services:
+  twin:
+    build: ./twin-java
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      TWIN_AUTOSTART_SCENARIO: nominal
+      TWIN_AUTOSTART_SPEEDFACTOR: 1
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      retries: 12
+
+  # Gateway mínimo: enruta /api/twin/* y /ws/telemetry conservando la ruta y exige X-API-Key en comandos y simulación.
+  gateway:
+    image: nginx:1.27.3-alpine
+    environment:
+      TWIN_API_KEY: ${TWIN_API_KEY:?Define TWIN_API_KEY en .env (ver .env.example)}
+    volumes:
+      - ./gateway/templates:/etc/nginx/templates:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      twin:
+        condition: service_healthy
