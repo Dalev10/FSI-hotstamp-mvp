@@ -30,7 +30,7 @@ class TwinPropertiesTest {
             assertThat(p.autostart().scenario()).isEqualTo("nominal");
             assertThat(p.sensing().coldJunction()).isEqualTo(ColdJunctionMode.AMBIENT_SENSOR);
             assertThat(p.control().defaultMode()).isEqualTo(ControlMode.PID);
-            assertThat(p.conveyor().discardFaceFromM()).isEqualTo(-0.01);
+            assertThat(p.conveyor().discardFaceFromM()).isEqualTo(-0.04);
             assertThat(p.commands().kp().max()).isEqualTo(60.0);
         });
     }
@@ -41,8 +41,7 @@ class TwinPropertiesTest {
         runner.run(ctx -> {
             TwinProperties p = ctx.getBean(TwinProperties.class);
             assertThat(p.engine().tickMs()).isEqualTo(DefaultParameters.TICK.ms());
-            assertThat(p.thermal().toParameters()).isEqualTo(DefaultParameters.thermal());
-            assertThat(p.sensing().toPlantParameters()).isEqualTo(DefaultParameters.sensing());
+            assertThat(p.toPlantParameters()).isEqualTo(DefaultParameters.plant());
             assertThat(p.sensing().toFirmwareParameters()).isEqualTo(DefaultParameters.firmware());
         });
     }
@@ -79,7 +78,7 @@ class TwinPropertiesTest {
                 "twin.sensing.adc-bits=31",
                 "twin.sensing.open-tc-counts-threshold=5000",
                 "twin.conveyor.station-at-m=0.5",
-                "twin.conveyor.discard-face-to-m=-0.02",
+                "twin.conveyor.discard-face-to-m=-0.05",
                 "twin.pneumatics.stroke-ms=1600",
                 "twin.safety.over-temp-trip-c=70",
                 "twin.commands.kp.min=70",

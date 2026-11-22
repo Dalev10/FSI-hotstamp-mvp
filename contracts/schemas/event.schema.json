@@ -67,7 +67,10 @@
       "required": ["pieceId", "result"],
       "properties": {
         "pieceId": { "$ref": "telemetry.schema.json#/$defs/pieceId" },
-        "result": { "enum": ["STAMPED_OK", "METAL_ESCAPED"] }
+        "result": {
+          "enum": ["STAMPED_OK", "METAL_ESCAPED", "UNSTAMPED"],
+          "description": "STAMPED_OK: plástica estampada; METAL_ESCAPED: metal que no se descartó; UNSTAMPED: plástica que salió sin estampar."
+        }
       }
     },
     "stateChanged": {

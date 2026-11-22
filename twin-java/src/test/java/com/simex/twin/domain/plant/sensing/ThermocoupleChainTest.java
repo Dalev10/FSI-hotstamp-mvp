@@ -28,21 +28,21 @@ class ThermocoupleChainTest {
 
     @Test
     void offsetDriftFromAFaultAddsLikeTheInputOffset() {
-        PlantModifiers drift = new PlantModifiers(1, 1, 0, 0.01, 1, false);
+        PlantModifiers drift = NEUTRAL.withOffsetDriftMv(0.01);
 
         assertThat(chain(0.0, 0.0).measure(62.5, AMBIENT_C, drift)).isEqualTo(480);
     }
 
     @Test
     void openThermocoupleSaturatesTheAdc() {
-        PlantModifiers open = new PlantModifiers(1, 1, 0, 0, 1, true);
+        PlantModifiers open = NEUTRAL.withThermocoupleOpen(true);
 
         assertThat(chain(0.0, 0.0).measure(62.5, AMBIENT_C, open)).isEqualTo(4095);
     }
 
     @Test
     void coldJunctionFollowsTheRealAmbient() {
-        PlantModifiers coldFront = new PlantModifiers(1, 1, 10, 0, 1, false);
+        PlantModifiers coldFront = NEUTRAL.withAmbientDropC(10);
 
         // Con el ambiente real a 15 °C, 52,5 °C dan la misma tensión que 62,5 °C con 25 °C.
         assertThat(chain(0.0, 0.0).measure(52.5, AMBIENT_C, coldFront)).isEqualTo(477);
@@ -51,7 +51,7 @@ class ThermocoupleChainTest {
     @Test
     void noiseHasTheConfiguredSigmaScaledByTheFaultFactor() {
         ThermocoupleChain noisy = chain(0.0, 0.3);
-        PlantModifiers fiveTimes = new PlantModifiers(1, 1, 0, 0, 5, false);
+        PlantModifiers fiveTimes = NEUTRAL.withNoiseSigmaFactor(5);
         double lsbC = 3.3 / 4095 / 250 / 0.041 * 1000;
 
         double[] counts = new double[20_000];
@@ -71,7 +71,7 @@ class ThermocoupleChainTest {
     @Test
     void ambientSensorReadsTheRealAmbientWithItsNoise() {
         AmbientSensor sensor = new AmbientSensor(0.1, stream());
-        PlantModifiers coldFront = new PlantModifiers(1, 1, 10, 0, 1, false);
+        PlantModifiers coldFront = NEUTRAL.withAmbientDropC(10);
 
         double[] readings = new double[20_000];
         for (int i = 0; i < readings.length; i++) {
