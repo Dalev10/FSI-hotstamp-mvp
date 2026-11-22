@@ -464,7 +464,7 @@ POST /api/twin/commands
 
 ## 6. Configuración (`application.yml`)
 
-Toda clave `twin.*` se puede sobrescribir por variable de entorno, por ejemplo `TWIN_AUTOSTART_SCENARIO` o `TWIN_ENGINE_SPEEDFACTOR`. `TwinProperties` es un record anidado con `@ConfigurationProperties("twin")` y `@Validated`.
+Toda clave `twin.*` se puede sobrescribir por variable de entorno, por ejemplo `TWIN_AUTOSTART_SCENARIO` o `TWIN_AUTOSTART_SPEEDFACTOR`. `TwinProperties` es un record anidado con `@ConfigurationProperties("twin")` y `@Validated`.
 
 ```yaml
 server: { port: 8080, shutdown: graceful }
