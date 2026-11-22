@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Telemetry",
+  "description": "Telemetría periódica del gemelo, cada 1 s simulado. Redondeo: temperaturas a 0,01; ciclos útiles a 0,001; energía a 0,1.",
+  "type": "object",
+  "allOf": [{ "$ref": "envelope.schema.json" }, { "$ref": "#/$defs/snapshotBody" }],
+  "properties": {
+    "type": { "const": "telemetry" }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "state": {
+      "description": "Respuesta de GET /api/twin/state: misma forma que la telemetría, sin type.",
+      "type": "object",
+      "allOf": [{ "$ref": "envelope.schema.json#/$defs/meta" }, { "$ref": "#/$defs/snapshotBody" }],
+      "unevaluatedProperties": false
+    },
+    "snapshotBody": {
+      "description": "Estado de la máquina. Abierto a propósito para poder componerlo; quien lo usa lo cierra con unevaluatedProperties.",
+      "type": "object",
+      "required": ["speedFactor", "state", "thermal", "conveyor", "sensors", "valves", "counters", "energy", "control", "safety"],
+      "properties": {
+        "speedFactor": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "state": { "$ref": "#/$defs/machineState" },
+        "thermal": { "$ref": "#/$defs/thermal" },
+        "conveyor": { "$ref": "#/$defs/conveyor" },
+        "sensors": { "$ref": "#/$defs/sensors" },
+        "valves": { "$ref": "#/$defs/valves" },
+        "counters": { "$ref": "#/$defs/counters" },
+        "energy": { "$ref": "#/$defs/energy" },
+        "control": { "$ref": "#/$defs/control" },
+        "safety": { "$ref": "#/$defs/safety" },
+        "groundTruth": { "$ref": "#/$defs/groundTruth" }
+      }
+    },
+    "machineState": {
+      "enum": ["OFF", "HEATING", "TRANSPORT", "DISCARD", "THERMAL_WAIT", "STAMPING", "EMERGENCY_STOP", "FAULT"]
+    },
+    "controlMode": { "enum": ["LEGACY", "PID"] },
+    "supervisor": { "enum": ["AGENT", "NONE"] },
+    "cylinderPosition": { "enum": ["RETRACTED", "EXTENDING", "EXTENDED", "RETRACTING"] },
+    "severity": { "enum": ["WARNING", "CRITICAL"] },
+    "alarmCode": {
+      "enum": [
+        "TEMP_LOW",
+        "TEMP_HIGH",
+        "HEATUP_TIMEOUT",
+        "THERMAL_WAIT_LONG",
+        "WATCHDOG_TIMEOUT",
+        "EMERGENCY_STOP",
+        "THERMOCOUPLE_OPEN",
+        "OVER_TEMPERATURE",
+        "PNEUMATIC_TIMEOUT"
+      ]
+    },
+    "interlock": { "enum": ["EMERGENCY_STOP", "THERMOCOUPLE_OPEN", "OVER_TEMPERATURE", "PNEUMATIC_TIMEOUT"] },
+    "pieceId": { "type": "string", "pattern": "^P-[0-9]{6}$", "description": "Consecutivo por corrida." },
+    "fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "thermal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tempC", "setpointC", "band", "heaterDuty", "ssr", "tcMillivolts", "ambientC"],
+      "properties": {
+        "tempC": { "type": "number", "description": "Temperatura medida por el firmware (°C)." },
+        "setpointC": { "type": "number", "description": "Setpoint del PID. En LEGACY se reporta pero no se usa." },
+        "band": { "enum": ["LOW", "OK", "HIGH"], "description": "Semáforo: LOW < 50 ≤ OK ≤ 75 < HIGH, con histéresis." },
+        "heaterDuty": { "$ref": "#/$defs/fraction", "description": "Ciclo útil latcheado del SSR en la ventana actual." },
+        "ssr": { "type": "boolean" },
+        "tcMillivolts": { "type": "number", "description": "Tensión de entrada de la termocupla reconstruida desde las cuentas del ADC." },
+        "ambientC": { "type": "number", "description": "Lectura del sensor de ambiente." }
+      }
+    },
+    "conveyor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["running", "pwmDuty", "speedMps", "queueLength"],
+      "properties": {
+        "running": { "type": "boolean" },
+        "pwmDuty": { "$ref": "#/$defs/fraction" },
+        "speedMps": { "type": "number", "minimum": 0 },
+        "queueLength": { "type": "integer", "minimum": 0, "description": "Piezas esperando entrar a la banda." }
+      }
+    },
+    "sensors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inductive", "photoelectric"],
+      "properties": {
+        "inductive": { "enum": [0, 1] },
+        "photoelectric": { "enum": [0, 1] }
+      }
+    },
+    "valves": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discard", "stamp", "stampStrokeMs"],
+      "properties": {
+        "discard": { "$ref": "#/$defs/cylinderPosition" },
+        "stamp": { "$ref": "#/$defs/cylinderPosition" },
+        "stampStrokeMs": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Duración de la última extensión del cilindro de estampado; null hasta la primera."
+        }
+      }
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metalDiscarded", "plasticStamped", "metalEscaped", "piecesArrived"],
+      "properties": {
+        "metalDiscarded": { "type": "integer", "minimum": 0 },
+        "plasticStamped": { "type": "integer", "minimum": 0 },
+        "metalEscaped": { "type": "integer", "minimum": 0 },
+        "piecesArrived": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "energy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["heaterWh", "motorWh"],
+      "properties": {
+        "heaterWh": { "type": "number", "minimum": 0 },
+        "motorWh": { "type": "number", "minimum": 0 }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "kp", "ki", "kd", "supervisor", "agentHeartbeatAgeMs"],
+      "properties": {
+        "mode": { "$ref": "#/$defs/controlMode" },
+        "kp": { "type": "number", "minimum": 0, "description": "%/°C" },
+        "ki": { "type": "number", "minimum": 0, "description": "%/(°C·s)" },
+        "kd": { "type": "number", "minimum": 0, "description": "%·s/°C" },
+        "supervisor": { "$ref": "#/$defs/supervisor" },
+        "agentHeartbeatAgeMs": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Tiempo desde el último latido del agente; null antes del primero."
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["estop", "interlock", "activeAlarms"],
+      "properties": {
+        "estop": { "type": "boolean" },
+        "interlock": {
+          "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/interlock" }],
+          "description": "Interlock que disparó; se mantiene hasta el RESET."
+        },
+        "activeAlarms": { "type": "array", "items": { "$ref": "#/$defs/activeAlarm" } }
+      }
+    },
+    "activeAlarm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "latched", "acknowledged", "raisedAtSimMs"],
+      "properties": {
+        "code": { "$ref": "#/$defs/alarmCode" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "latched": { "type": "boolean" },
+        "acknowledged": { "type": "boolean" },
+        "raisedAtSimMs": { "type": "integer", "minimum": 0 },
+        "detail": { "type": "string" }
+      }
+    },
+    "groundTruth": {
+      "description": "Valores reales de la planta. Solo con ?groundTruth=true (dashboard y evaluación).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platenTempC", "ambientC", "heaterEfficiency", "activeFaults", "stampedOutOfWindow"],
+      "properties": {
+        "platenTempC": { "type": "number" },
+        "ambientC": { "type": "number" },
+        "heaterEfficiency": { "$ref": "#/$defs/fraction" },
+        "activeFaults": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["faultId", "type", "sinceSimMs"],
+            "properties": {
+              "faultId": { "type": "string", "format": "uuid" },
+              "type": { "$ref": "fault.schema.json#/$defs/faultType" },
+              "sinceSimMs": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "stampedOutOfWindow": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Estampados con la temperatura real del troquel fuera de la ventana."
+        }
+      }
+    }
+  }
+}

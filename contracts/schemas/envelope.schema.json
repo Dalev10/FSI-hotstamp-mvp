@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "Sobre común de los mensajes de /ws/telemetry. Es abstracto: hello, telemetry y event lo extienden y lo cierran.",
+  "type": "object",
+  "allOf": [{ "$ref": "#/$defs/meta" }],
+  "required": ["type"],
+  "properties": {
+    "type": { "enum": ["hello", "telemetry", "event"] }
+  },
+  "$defs": {
+    "meta": {
+      "description": "Campos del sobre sin type. GET /api/twin/state también los lleva.",
+      "type": "object",
+      "required": ["schemaVersion", "seq", "runId", "ts", "simTs", "simTimeMs"],
+      "properties": {
+        "schemaVersion": { "const": "1.0" },
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Monótono por corrida y por vista (pública o groundTruth), sin huecos dentro de cada vista. Telemetría y eventos comparten el contador. hello no lo consume: lleva el último seq emitido en su vista (0 si todavía no hay)."
+        },
+        "runId": {
+          "type": ["string", "null"],
+          "format": "uuid",
+          "description": "Identificador de la corrida. null solo antes de la primera corrida."
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Reloj de pared del gemelo (ISO-8601, UTC)."
+        },
+        "simTs": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Inicio de la corrida + tiempo simulado. null solo antes de la primera corrida."
+        },
+        "simTimeMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tiempo simulado desde el inicio de la corrida."
+        }
+      },
+      "if": { "required": ["runId"], "properties": { "runId": { "type": "null" } } },
+      "then": { "properties": { "simTs": { "type": "null" }, "simTimeMs": { "const": 0 } } },
+      "else": { "properties": { "simTs": { "type": "string" } } }
+    }
+  }
+}

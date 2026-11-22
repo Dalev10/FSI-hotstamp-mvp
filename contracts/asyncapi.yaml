@@ -1,0 +1,66 @@
+asyncapi: 3.0.0
+info:
+  title: twin-java — telemetría y eventos
+  version: '1.0'
+  description: |
+    Canal de solo lectura del gemelo: el servidor ignora lo que envíe el cliente.
+
+    - Al conectar, el servidor envía `hello` con el snapshot actual; luego `telemetry` cada 1 s simulado y `event` al momento.
+    - Todos los mensajes comparten el sobre de `schemas/envelope.schema.json`.
+    - `seq` es monótono por corrida y por vista, sin huecos dentro de cada vista: un salto indica mensajes perdidos.
+    - Vista pública (sin parámetros): la que usa el agente. Vista groundTruth (`?groundTruth=true`): agrega el bloque
+      `groundTruth`, los eventos `FAULT_INJECTED`/`FAULT_CLEARED` y el `scenarioId` de `RUN_STARTED`. Es para el dashboard y la evaluación.
+    - Los esquemas son cerrados: un campo desconocido es inválido. Al leer, los consumidores deben ignorar campos nuevos.
+defaultContentType: application/json
+servers:
+  gateway:
+    host: localhost:8080
+    protocol: ws
+    description: Gateway local; reenvía `/ws/telemetry` a `twin:8080`.
+channels:
+  telemetry:
+    address: /ws/telemetry
+    title: Telemetría y eventos del gemelo
+    messages:
+      hello: { $ref: '#/components/messages/hello' }
+      telemetry: { $ref: '#/components/messages/telemetry' }
+      event: { $ref: '#/components/messages/event' }
+    bindings:
+      ws:
+        bindingVersion: 0.1.0
+        query:
+          type: object
+          properties:
+            groundTruth:
+              type: boolean
+              default: false
+              description: Vista groundTruth (dashboard y evaluación). El agente se conecta sin este parámetro.
+operations:
+  sendTelemetry:
+    action: send
+    title: El gemelo envía hello, telemetría y eventos
+    channel: { $ref: '#/channels/telemetry' }
+    messages:
+      - $ref: '#/channels/telemetry/messages/hello'
+      - $ref: '#/channels/telemetry/messages/telemetry'
+      - $ref: '#/channels/telemetry/messages/event'
+components:
+  messages:
+    hello:
+      name: hello
+      title: Saludo al conectar
+      payload:
+        schemaFormat: application/schema+json;version=2020-12
+        schema: { $ref: './schemas/hello.schema.json' }
+    telemetry:
+      name: telemetry
+      title: Telemetría periódica
+      payload:
+        schemaFormat: application/schema+json;version=2020-12
+        schema: { $ref: './schemas/telemetry.schema.json' }
+    event:
+      name: event
+      title: Evento de dominio
+      payload:
+        schemaFormat: application/schema+json;version=2020-12
+        schema: { $ref: './schemas/event.schema.json' }

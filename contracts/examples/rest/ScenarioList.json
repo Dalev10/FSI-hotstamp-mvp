@@ -1,0 +1,12 @@
+[
+  {
+    "id": "nominal",
+    "description": "Operación nominal sin fallas",
+    "durationSimS": 3600
+  },
+  {
+    "id": "frente-frio",
+    "description": "Frente frío a los 600 s",
+    "durationSimS": 3600
+  }
+]

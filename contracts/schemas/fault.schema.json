@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FaultRequest",
+  "description": "Cuerpo de POST /api/twin/sim/faults y base de las fallas de un escenario. Los parámetros omitidos toman su valor por defecto.",
+  "type": "object",
+  "allOf": [{ "$ref": "#/$defs/faultSpec" }],
+  "unevaluatedProperties": false,
+  "$defs": {
+    "faultType": {
+      "enum": [
+        "HEATER_DEGRADATION",
+        "COLD_FRONT",
+        "SENSOR_NOISE",
+        "OFFSET_DRIFT",
+        "THERMOCOUPLE_OPEN",
+        "MOTOR_WEAR",
+        "PNEUMATIC_LEAK",
+        "METAL_BURST"
+      ]
+    },
+    "faultSpec": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/typedParams" }],
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/faultType" },
+        "params": { "type": "object" },
+        "durationS": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Si falta, la falla dura hasta que se retira; METAL_BURST usa 120 s por defecto."
+        }
+      }
+    },
+    "typedParams": {
+      "description": "params según type.",
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "HEATER_DEGRADATION" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "finalEfficiencyFactor": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "default": 0.7 },
+                  "rampS": { "type": "number", "minimum": 0, "default": 1800 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "COLD_FRONT" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ambientDropC": { "type": "number", "default": 10 },
+                  "rthFactor": { "type": "number", "exclusiveMinimum": 0, "default": 0.85 },
+                  "rampS": { "type": "number", "minimum": 0, "default": 600 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "SENSOR_NOISE" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": { "sigmaFactor": { "type": "number", "exclusiveMinimum": 0, "default": 5 } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "OFFSET_DRIFT" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": { "driftMvPerMin": { "type": "number", "default": 0.02 } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "THERMOCOUPLE_OPEN" } } },
+          "then": { "properties": { "params": { "type": "object", "maxProperties": 0 } } }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "MOTOR_WEAR" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "frictionFactor": { "type": "number", "exclusiveMinimum": 0, "default": 1.3 },
+                  "rampS": { "type": "number", "minimum": 0, "default": 600 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "PNEUMATIC_LEAK" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["cylinder"],
+                "properties": {
+                  "cylinder": { "enum": ["STAMP", "DISCARD", "BOTH"] },
+                  "strokeFactor": { "type": "number", "exclusiveMinimum": 0, "default": 1.5 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "METAL_BURST" } } },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "metalRatio": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.8 },
+                  "meanIntervalS": { "type": "number", "exclusiveMinimum": 0, "default": 5 }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

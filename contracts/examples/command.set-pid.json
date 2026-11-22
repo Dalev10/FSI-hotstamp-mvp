@@ -1,0 +1,11 @@
+{
+  "commandId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "type": "SET_PID",
+  "params": {
+    "kp": 9.5,
+    "ki": 0.11,
+    "kd": 0.0
+  },
+  "issuedBy": "agent",
+  "reason": "Ganancia térmica estimada cayó 18 %"
+}

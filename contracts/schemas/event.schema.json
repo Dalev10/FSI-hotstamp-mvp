@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Event",
+  "description": "Evento de dominio, publicado al momento. FAULT_INJECTED y FAULT_CLEARED solo llegan a la vista groundTruth.",
+  "type": "object",
+  "allOf": [
+    { "$ref": "envelope.schema.json" },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "PIECE_DISCARDED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pieceDiscarded" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "PIECE_STAMPED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pieceStamped" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "PIECE_EXITED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pieceExited" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "STATE_CHANGED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/stateChanged" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "ALARM_RAISED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/alarm" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "ALARM_CLEARED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/alarm" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "COMMAND_APPLIED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/commandApplied" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "COMMAND_REJECTED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/commandRejected" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "FAULT_INJECTED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faultInjected" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "FAULT_CLEARED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faultCleared" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "SUPERVISOR_CHANGED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/supervisorChanged" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "RUN_STARTED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/runStarted" } } } },
+    { "if": { "required": ["eventType"], "properties": { "eventType": { "const": "RUN_ENDED" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/runEnded" } } } }
+  ],
+  "required": ["eventType", "data"],
+  "properties": {
+    "type": { "const": "event" },
+    "eventType": { "$ref": "#/$defs/eventType" },
+    "data": { "type": "object" }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "eventType": {
+      "enum": [
+        "PIECE_DISCARDED",
+        "PIECE_STAMPED",
+        "PIECE_EXITED",
+        "STATE_CHANGED",
+        "ALARM_RAISED",
+        "ALARM_CLEARED",
+        "COMMAND_APPLIED",
+        "COMMAND_REJECTED",
+        "FAULT_INJECTED",
+        "FAULT_CLEARED",
+        "SUPERVISOR_CHANGED",
+        "RUN_STARTED",
+        "RUN_ENDED"
+      ]
+    },
+    "pieceDiscarded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pieceId"],
+      "properties": { "pieceId": { "$ref": "telemetry.schema.json#/$defs/pieceId" } }
+    },
+    "pieceStamped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pieceId", "tempC", "waitMs", "stampStrokeMs"],
+      "properties": {
+        "pieceId": { "$ref": "telemetry.schema.json#/$defs/pieceId" },
+        "tempC": { "type": "number", "description": "Temperatura medida al iniciar el estampado." },
+        "waitMs": { "type": "integer", "minimum": 0, "description": "Tiempo entre la detección en la estación y el inicio del estampado." },
+        "stampStrokeMs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "pieceExited": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pieceId", "result"],
+      "properties": {
+        "pieceId": { "$ref": "telemetry.schema.json#/$defs/pieceId" },
+        "result": { "enum": ["STAMPED_OK", "METAL_ESCAPED"] }
+      }
+    },
+    "stateChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "$ref": "telemetry.schema.json#/$defs/machineState" },
+        "to": { "$ref": "telemetry.schema.json#/$defs/machineState" }
+      }
+    },
+    "alarm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity"],
+      "properties": {
+        "code": { "$ref": "telemetry.schema.json#/$defs/alarmCode" },
+        "severity": { "$ref": "telemetry.schema.json#/$defs/severity" },
+        "detail": { "type": "string", "description": "Por ejemplo, el cilindro en PNEUMATIC_TIMEOUT." }
+      }
+    },
+    "commandApplied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "type", "issuedBy", "rule"],
+      "properties": {
+        "commandId": { "type": "string", "format": "uuid" },
+        "type": { "$ref": "command.schema.json#/$defs/commandType" },
+        "issuedBy": { "$ref": "command.schema.json#/$defs/issuer" },
+        "rule": { "type": "null" }
+      }
+    },
+    "commandRejected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "type", "issuedBy", "rule", "detail"],
+      "properties": {
+        "commandId": { "type": "string", "format": "uuid" },
+        "type": { "$ref": "command.schema.json#/$defs/commandType" },
+        "issuedBy": { "$ref": "command.schema.json#/$defs/issuer" },
+        "rule": { "$ref": "command-result.schema.json#/$defs/rule" },
+        "detail": { "type": "string" }
+      }
+    },
+    "faultInjected": {
+      "type": "object",
+      "allOf": [{ "$ref": "fault.schema.json#/$defs/typedParams" }],
+      "required": ["faultId", "type", "params", "durationS"],
+      "properties": {
+        "faultId": { "type": "string", "format": "uuid" },
+        "type": { "$ref": "fault.schema.json#/$defs/faultType" },
+        "params": { "type": "object", "description": "Parámetros efectivos, con los valores por defecto aplicados." },
+        "durationS": { "type": ["number", "null"], "exclusiveMinimum": 0, "description": "null: dura hasta que se retira." }
+      },
+      "unevaluatedProperties": false
+    },
+    "faultCleared": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["faultId", "type"],
+      "properties": {
+        "faultId": { "type": "string", "format": "uuid" },
+        "type": { "$ref": "fault.schema.json#/$defs/faultType" }
+      }
+    },
+    "supervisorChanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "$ref": "telemetry.schema.json#/$defs/supervisor" },
+        "to": { "$ref": "telemetry.schema.json#/$defs/supervisor" }
+      }
+    },
+    "runStarted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "controlMode", "speedFactor", "parameters"],
+      "properties": {
+        "scenarioId": { "type": "string", "description": "Solo en la vista groundTruth: el nombre del escenario revela la falla." },
+        "seed": { "type": "integer" },
+        "controlMode": { "$ref": "telemetry.schema.json#/$defs/controlMode" },
+        "speedFactor": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "parameters": {
+          "description": "Parámetros de control iniciales. Nada del modelo térmico: el agente debe estimarlo.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["setpointC", "kp", "ki", "kd", "beltPwm"],
+          "properties": {
+            "setpointC": { "type": "number" },
+            "kp": { "type": "number", "minimum": 0 },
+            "ki": { "type": "number", "minimum": 0 },
+            "kd": { "type": "number", "minimum": 0 },
+            "beltPwm": { "$ref": "telemetry.schema.json#/$defs/fraction" }
+          }
+        }
+      }
+    },
+    "runEnded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": { "reason": { "enum": ["COMPLETED", "STOPPED", "REPLACED"] } }
+    }
+  }
+}

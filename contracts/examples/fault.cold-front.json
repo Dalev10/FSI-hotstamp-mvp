@@ -1,0 +1,9 @@
+{
+  "type": "COLD_FRONT",
+  "params": {
+    "ambientDropC": 10,
+    "rthFactor": 0.85,
+    "rampS": 600
+  },
+  "durationS": 3600
+}

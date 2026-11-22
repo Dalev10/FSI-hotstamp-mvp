@@ -1,0 +1,53 @@
+{
+  "id": "ejemplo-frente-frio",
+  "description": "Ejemplo del formato: corrida de 1 h con un frente frío a los 600 s",
+  "seed": 42,
+  "durationSimS": 3600,
+  "controlMode": "PID",
+  "initialConditions": {
+    "platenTempC": 25.0,
+    "ambientC": 25.0
+  },
+  "arrivals": {
+    "meanIntervalS": 10,
+    "metalRatio": 0.1
+  },
+  "ambientProfile": [
+    {
+      "atS": 0,
+      "ambientC": 25.0
+    },
+    {
+      "atS": 3600,
+      "ambientC": 24.0
+    }
+  ],
+  "actions": [
+    {
+      "atS": 0,
+      "command": {
+        "type": "START"
+      }
+    },
+    {
+      "atS": 1800,
+      "command": {
+        "type": "SET_BELT_SPEED",
+        "params": {
+          "pwmDuty": 0.8
+        }
+      }
+    }
+  ],
+  "faults": [
+    {
+      "atS": 600,
+      "type": "COLD_FRONT",
+      "params": {
+        "ambientDropC": 10,
+        "rthFactor": 0.85,
+        "rampS": 600
+      }
+    }
+  ]
+}

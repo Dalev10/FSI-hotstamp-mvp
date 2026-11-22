@@ -1,0 +1,26 @@
+{
+  "process": {
+    "windowMinC": 50.0,
+    "windowMaxC": 75.0,
+    "defaultSetpointC": 62.5
+  },
+  "setpointMaxStepC": 5.0,
+  "pidMaxStepFraction": 0.2,
+  "kp": {
+    "min": 0.5,
+    "max": 60.0
+  },
+  "ki": {
+    "min": 0.0,
+    "max": 2.0
+  },
+  "kd": {
+    "min": 0.0,
+    "max": 120.0
+  },
+  "beltPwm": {
+    "min": 0.4,
+    "max": 1.0,
+    "maxStep": 0.2
+  }
+}

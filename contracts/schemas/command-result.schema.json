@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CommandResult",
+  "description": "Respuesta de POST /api/twin/commands: 202 con APPLIED o 409 con REJECTED. Un commandId repetido devuelve la respuesta original con la cabecera Idempotent-Replay: true.",
+  "type": "object",
+  "required": ["commandId", "status"],
+  "properties": {
+    "commandId": { "type": "string", "format": "uuid" },
+    "status": { "enum": ["APPLIED", "REJECTED"] },
+    "appliedAtSimMs": { "type": "integer", "minimum": 0 },
+    "rule": { "$ref": "#/$defs/rule" },
+    "detail": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "if": { "required": ["status"], "properties": { "status": { "const": "APPLIED" } } },
+  "then": { "required": ["appliedAtSimMs"], "properties": { "rule": false, "detail": false } },
+  "else": { "required": ["rule", "detail"], "properties": { "appliedAtSimMs": false } },
+  "$defs": {
+    "rule": {
+      "description": "Código de la primera regla violada (sección 4.9 del plan).",
+      "enum": [
+        "SOURCE_NOT_ALLOWED",
+        "STATE_NOT_ALLOWED",
+        "MODE_MISMATCH",
+        "SETPOINT_RANGE",
+        "SETPOINT_MAX_STEP",
+        "KP_RANGE",
+        "KI_RANGE",
+        "KD_RANGE",
+        "KP_MAX_STEP_20PCT",
+        "KI_MAX_STEP_20PCT",
+        "KD_MAX_STEP_20PCT",
+        "BELT_PWM_RANGE",
+        "BELT_PWM_MAX_STEP",
+        "ALARMS_NOT_ACKNOWLEDGED",
+        "CAUSE_ACTIVE"
+      ]
+    }
+  }
+}

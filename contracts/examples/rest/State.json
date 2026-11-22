@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "seq": 372,
+  "runId": "b1f0c3a2-5d4e-4f6a-9b8c-7d6e5f4a3b2c",
+  "ts": "2026-11-21T21:06:12.000Z",
+  "simTs": "2026-11-21T21:06:12.000Z",
+  "simTimeMs": 372000,
+  "speedFactor": 1,
+  "state": "STAMPING",
+  "thermal": {
+    "tempC": 61.8,
+    "setpointC": 62.5,
+    "band": "OK",
+    "heaterDuty": 0.23,
+    "ssr": true,
+    "tcMillivolts": 1.546,
+    "ambientC": 24.1
+  },
+  "conveyor": {
+    "running": false,
+    "pwmDuty": 0.7,
+    "speedMps": 0.0,
+    "queueLength": 0
+  },
+  "sensors": {
+    "inductive": 0,
+    "photoelectric": 1
+  },
+  "valves": {
+    "discard": "RETRACTED",
+    "stamp": "EXTENDED",
+    "stampStrokeMs": 350
+  },
+  "counters": {
+    "metalDiscarded": 1,
+    "plasticStamped": 2,
+    "metalEscaped": 0,
+    "piecesArrived": 6
+  },
+  "energy": {
+    "heaterWh": 116.2,
+    "motorWh": 2.3
+  },
+  "control": {
+    "mode": "PID",
+    "kp": 10.0,
+    "ki": 0.1,
+    "kd": 0.0,
+    "supervisor": "AGENT",
+    "agentHeartbeatAgeMs": 900
+  },
+  "safety": {
+    "estop": false,
+    "interlock": null,
+    "activeAlarms": []
+  }
+}
