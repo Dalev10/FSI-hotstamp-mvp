@@ -4,7 +4,8 @@ Simulación determinista de la estampadora en caliente del ITO 2 (planta térmic
 lógica de control y seguridad. Expone telemetría y comandos por REST y WebSocket para el agente de IA y el dashboard.
 La especificación completa está en [`docs/plans/PLAN-01-gemelo-digital.md`](../docs/plans/PLAN-01-gemelo-digital.md).
 
-> Estado: **T0 (andamiaje)**. Todavía no hay simulación ni endpoints propios; solo `/actuator/health`.
+> Estado: **T1 (contratos y stub)**. Todavía no hay simulación. El perfil `stub` imita el contrato para que el agente y
+> el dashboard puedan avanzar.
 
 ## Requisitos
 
@@ -29,6 +30,27 @@ Comprobación rápida: `curl http://localhost:8080/actuator/health` debe respond
 Todos los parámetros están en `src/main/resources/application.yml`, bajo `twin.*`, y se validan al arrancar: un valor
 inválido impide el arranque. Cualquier clave se puede sobrescribir por variable de entorno, por ejemplo
 `TWIN_AUTOSTART_SCENARIO=` (vacío, para no arrancar ninguna corrida) o `TWIN_ENGINE_SPEEDFACTOR=10`.
+
+## Contratos
+
+La fuente de verdad del API está en [`../contracts/`](../contracts/): esquemas JSON Schema 2020-12 (`schemas/`),
+un ejemplo válido por mensaje (`examples/`), `openapi.yaml` (REST) y `asyncapi.yaml` (`/ws/telemetry`). Todo cambio de
+contrato se hace primero allí. `ContractExamplesTest` valida los ejemplos, comprueba que los casos de
+`src/test/resources/contract-invalid-cases.json` se rechacen y que cada `$ref` resuelva. Las pruebas leen la carpeta
+desde la propiedad `contracts.dir`, que Maven fija en `../contracts`.
+
+## Perfil `stub` (temporal, se elimina en T9)
+
+Reenvía `contracts/examples/telemetry*.json` por `/ws/telemetry` a 1 Hz, con `seq` consecutivo y `hello` al conectar.
+Quita `groundTruth` salvo con `?groundTruth=true`. Responde 202 `APPLIED` a `POST /api/twin/commands` y 204 a los
+latidos, sin aplicar nada.
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=stub
+# Con Docker hay que montar los ejemplos, porque contracts/ no entra en la imagen:
+docker run --rm -p 8080:8080 -v "$PWD/../contracts:/contracts:ro" \
+  -e SPRING_PROFILES_ACTIVE=stub -e TWIN_STUB_EXAMPLESDIR=/contracts/examples twin-java
+```
 
 ## Arquitectura
 

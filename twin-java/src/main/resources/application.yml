@@ -2,6 +2,7 @@ server: { port: 8080, shutdown: graceful }
 spring:
   application.name: twin
   threads.virtual.enabled: true
+  mvc.problemdetails.enabled: true          # errores 4xx/5xx como RFC 9457 (contrato)
 management:
   endpoints.web.exposure.include: health,info,metrics
   endpoint.health.probes.enabled: true
