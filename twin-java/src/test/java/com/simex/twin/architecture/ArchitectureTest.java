@@ -1,5 +1,7 @@
 package com.simex.twin.architecture;
 
+import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
@@ -24,6 +26,7 @@ class ArchitectureTest {
     private static final String DOMAIN = "com.simex.twin.domain..";
     private static final String APPLICATION = "com.simex.twin.application..";
     private static final String ADAPTER = "com.simex.twin.adapter..";
+    private static final String CONTRACT = "com.simex.twin.adapter.contract..";
     private static final String CONFIG = "com.simex.twin.config..";
 
     private static final DescribedPredicate<JavaAccess<?>> NON_DETERMINISTIC_ACCESS = access(
@@ -66,6 +69,8 @@ class ArchitectureTest {
                     "com.simex.twin.adapter.(*)..")
             .should()
             .notDependOnEachOther()
+            // adapter.contract es el formato JSON que comparten REST, WebSocket y los escenarios.
+            .ignoreDependency(alwaysTrue(), resideInAPackage(CONTRACT))
             .allowEmptyShould(true);
 
     @ArchTest
@@ -134,7 +139,7 @@ class ArchitectureTest {
             .resideOutsideOfPackage(ADAPTER)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage("com.simex.twin.adapter..dto..", "com.simex.twin.adapter..message..")
+            .resideInAnyPackage("com.simex.twin.adapter..dto..", "com.simex.twin.adapter..message..", CONTRACT)
             .allowEmptyShould(true);
 
     private static DescribedPredicate<JavaAccess<?>> access(Class<?> owner, String member) {

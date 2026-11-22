@@ -7,6 +7,8 @@ import java.util.Set;
 /** Lectura validada de los parámetros de una falla: un nombre desconocido o un tipo incorrecto es un error. */
 public final class FaultParams {
 
+    public static final double NO_MAX = Double.POSITIVE_INFINITY;
+
     private final FaultType type;
     private final Map<String, Object> values;
 
@@ -29,6 +31,24 @@ public final class FaultParams {
             return number.doubleValue();
         }
         throw new DomainException(type + "." + name + " debe ser un número: " + value);
+    }
+
+    /** Un número en (0, max], como exige el contrato. */
+    public double positive(String name, double defaultValue, double max) {
+        double value = number(name, defaultValue);
+        if (value <= 0 || value > max) {
+            throw new DomainException(type + "." + name + " debe estar en (0, " + max + "]: " + value);
+        }
+        return value;
+    }
+
+    /** Un número en [0, max], como exige el contrato. */
+    public double nonNegative(String name, double defaultValue, double max) {
+        double value = number(name, defaultValue);
+        if (value < 0 || value > max) {
+            throw new DomainException(type + "." + name + " debe estar en [0, " + max + "]: " + value);
+        }
+        return value;
     }
 
     public String text(String name) {

@@ -183,7 +183,11 @@ public final class StampingMachine {
                         plant.heaterEfficiency(),
                         faults.active().stream()
                                 .map(f -> new MachineSnapshot.ActiveFault(
-                                        f.faultId(), f.fault().type(), f.startedAt()))
+                                        f.faultId(),
+                                        f.fault().type(),
+                                        f.startedAt(),
+                                        f.fault().params(),
+                                        f.duration()))
                                 .toList(),
                         stampedOutOfWindow));
     }

@@ -17,6 +17,7 @@ import com.simex.twin.domain.scenario.Scenario;
 import com.simex.twin.domain.shared.SimDuration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import tools.jackson.databind.json.JsonMapper;
@@ -51,7 +52,7 @@ public final class EngineFixture {
                 1000,
                 publisher,
                 wallClock,
-                () -> "run-" + runs.incrementAndGet(),
+                () -> new UUID(0, runs.incrementAndGet()).toString(), // con forma de UUID, como pide el contrato
                 idleScenario());
         this.service = new SimulationService(
                 engine,

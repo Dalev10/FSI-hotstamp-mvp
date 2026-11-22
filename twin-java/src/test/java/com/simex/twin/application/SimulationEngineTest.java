@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,7 @@ class SimulationEngineTest {
 
         EventFrame first = f.publisher.events.getFirst();
         assertThat(first.groundTruthEnvelope().seq()).isEqualTo(1);
-        assertThat(first.groundTruthEnvelope().runId()).isEqualTo("run-1");
+        assertThat(first.groundTruthEnvelope().runId()).isEqualTo(new UUID(0, 1).toString());
         assertThat(first.event())
                 .isEqualTo(new DomainEvent.RunStarted(
                         "nominal",
@@ -160,7 +161,7 @@ class SimulationEngineTest {
                 .containsExactly(DomainEvent.RunEndReason.REPLACED, DomainEvent.RunEndReason.COMPLETED);
         assertThat(f.engine.view().status().status()).isEqualTo(SimulationStatus.Status.ENDED);
         assertThat(f.engine.view().status().simTimeMs()).isEqualTo(3_600_000);
-        assertThat(f.engine.view().status().runId()).hasValue("run-2");
+        assertThat(f.engine.view().status().runId()).hasValue(new UUID(0, 2).toString());
     }
 
     @Test
@@ -188,12 +189,13 @@ class SimulationEngineTest {
         f.service.startRun("nominal", Optional.empty(), 1, Optional.empty());
         CompletableFuture<Optional<String>> id = f.service.inject(FaultType.SENSOR_NOISE, Map.of(), Optional.empty());
         f.cycles(1);
-        CompletableFuture<Boolean> removed = f.service.remove(id.join().orElseThrow());
-        CompletableFuture<Boolean> missing = f.service.remove("inexistente");
+        CompletableFuture<Optional<Boolean>> removed =
+                f.service.remove(id.join().orElseThrow());
+        CompletableFuture<Optional<Boolean>> missing = f.service.remove("inexistente");
         f.cycles(1);
 
-        assertThat(removed.join()).isTrue();
-        assertThat(missing.join()).isFalse();
+        assertThat(removed.join()).hasValue(true);
+        assertThat(missing.join()).hasValue(false);
     }
 
     @Test

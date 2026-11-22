@@ -1,5 +1,7 @@
 package com.simex.twin.domain.fault;
 
+import static com.simex.twin.domain.fault.FaultParams.NO_MAX;
+
 import com.simex.twin.domain.fault.faults.Faults;
 import java.util.EnumMap;
 import java.util.Map;
@@ -17,14 +19,19 @@ public final class FaultFactory {
         register(
                 FaultType.HEATER_DEGRADATION,
                 Set.of("finalEfficiencyFactor", "rampS"),
-                p -> new Faults.HeaterDegradation(p.number("finalEfficiencyFactor", 0.70), p.number("rampS", 1800)));
+                p -> new Faults.HeaterDegradation(
+                        p.positive("finalEfficiencyFactor", 0.70, 1), p.nonNegative("rampS", 1800, NO_MAX)));
         register(
                 FaultType.COLD_FRONT,
                 Set.of("ambientDropC", "rthFactor", "rampS"),
                 p -> new Faults.ColdFront(
-                        p.number("ambientDropC", 10), p.number("rthFactor", 0.85), p.number("rampS", 600)));
+                        p.number("ambientDropC", 10),
+                        p.positive("rthFactor", 0.85, NO_MAX),
+                        p.nonNegative("rampS", 600, NO_MAX)));
         register(
-                FaultType.SENSOR_NOISE, Set.of("sigmaFactor"), p -> new Faults.SensorNoise(p.number("sigmaFactor", 5)));
+                FaultType.SENSOR_NOISE,
+                Set.of("sigmaFactor"),
+                p -> new Faults.SensorNoise(p.positive("sigmaFactor", 5, NO_MAX)));
         register(
                 FaultType.OFFSET_DRIFT,
                 Set.of("driftMvPerMin"),
@@ -33,16 +40,19 @@ public final class FaultFactory {
         register(
                 FaultType.MOTOR_WEAR,
                 Set.of("frictionFactor", "rampS"),
-                p -> new Faults.MotorWear(p.number("frictionFactor", 1.30), p.number("rampS", 600)));
+                p -> new Faults.MotorWear(
+                        p.positive("frictionFactor", 1.30, NO_MAX), p.nonNegative("rampS", 600, NO_MAX)));
         register(
                 FaultType.PNEUMATIC_LEAK,
                 Set.of("cylinder", "strokeFactor"),
                 p -> new Faults.PneumaticLeak(
-                        Faults.PneumaticLeak.parseCylinder(p.text("cylinder")), p.number("strokeFactor", 1.5)));
+                        Faults.PneumaticLeak.parseCylinder(p.text("cylinder")),
+                        p.positive("strokeFactor", 1.5, NO_MAX)));
         register(
                 FaultType.METAL_BURST,
                 Set.of("metalRatio", "meanIntervalS"),
-                p -> new Faults.MetalBurst(p.number("metalRatio", 0.8), p.number("meanIntervalS", 5)));
+                p -> new Faults.MetalBurst(
+                        p.nonNegative("metalRatio", 0.8, 1), p.positive("meanIntervalS", 5, NO_MAX)));
     }
 
     private FaultFactory() {}

@@ -165,6 +165,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/FaultCreated' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/NoActiveRun' }
   /api/twin/sim/faults/{faultId}:
     delete:
       operationId: clearFault
@@ -180,6 +181,7 @@ paths:
         '204':
           description: Falla retirada.
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NoActiveRun' }
   /actuator/health:
     get:
       operationId: health
@@ -211,6 +213,11 @@ components:
   responses:
     BadRequest:
       description: JSON mal formado o que no cumple el esquema.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NoActiveRun:
+      description: No hay una corrida activa (antes de la primera o con la corrida terminada).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }

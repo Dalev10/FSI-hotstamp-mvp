@@ -105,8 +105,8 @@ public final class SimulationService
     }
 
     @Override
-    public CompletableFuture<Boolean> remove(String faultId) {
-        CompletableFuture<Boolean> removed = new CompletableFuture<>();
+    public CompletableFuture<Optional<Boolean>> remove(String faultId) {
+        CompletableFuture<Optional<Boolean>> removed = new CompletableFuture<>();
         engine.submit(new EngineRequest.RemoveFault(faultId, removed));
         return removed;
     }

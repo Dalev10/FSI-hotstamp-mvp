@@ -101,6 +101,17 @@ class FaultsTest {
                 .isInstanceOf(DomainException.class);
         assertThatThrownBy(() -> FaultFactory.create(FaultType.PNEUMATIC_LEAK, Map.of("cylinder", "AMBOS")))
                 .isInstanceOf(DomainException.class);
+        // Los rangos del contrato (fault.schema.json).
+        assertThatThrownBy(() -> FaultFactory.create(FaultType.COLD_FRONT, Map.of("rthFactor", 0.0)))
+                .isInstanceOf(DomainException.class);
+        assertThatThrownBy(
+                        () -> FaultFactory.create(FaultType.HEATER_DEGRADATION, Map.of("finalEfficiencyFactor", 1.1)))
+                .isInstanceOf(DomainException.class);
+        assertThatThrownBy(() -> FaultFactory.create(FaultType.MOTOR_WEAR, Map.of("rampS", -1.0)))
+                .isInstanceOf(DomainException.class);
+        assertThat(FaultFactory.create(FaultType.METAL_BURST, Map.of("metalRatio", 0.0))
+                        .params())
+                .containsEntry("metalRatio", 0.0);
         assertThat(EnumSet.allOf(FaultType.class))
                 .allSatisfy(t -> assertThat(FaultFactory.paramNames(t)).isNotNull());
     }
