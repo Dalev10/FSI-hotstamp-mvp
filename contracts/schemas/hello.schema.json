@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hello",
+  "description": "Primer mensaje de cada sesión de /ws/telemetry, con el snapshot actual. No consume seq: lleva el último seq de su vista.",
+  "type": "object",
+  "allOf": [{ "$ref": "envelope.schema.json" }],
+  "required": ["snapshot"],
+  "properties": {
+    "type": { "const": "hello" },
+    "snapshot": { "$ref": "telemetry.schema.json#/$defs/snapshotBody", "unevaluatedProperties": false }
+  },
+  "unevaluatedProperties": false
+}

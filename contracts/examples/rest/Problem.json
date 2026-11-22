@@ -1,0 +1,7 @@
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No existe el escenario 'inexistente'",
+  "instance": "/api/twin/sim/scenario"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "SENSOR_NOISE",
+  "params": {
+    "sigmaFactor": 5
+  },
+  "durationS": 600
+}

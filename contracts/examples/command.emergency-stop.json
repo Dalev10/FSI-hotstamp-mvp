@@ -1,0 +1,6 @@
+{
+  "commandId": "3f2b8c1e-9a4d-4e7b-8c6f-1a2b3c4d5e07",
+  "type": "EMERGENCY_STOP",
+  "issuedBy": "dashboard",
+  "reason": "Prueba del paro de emergencia"
+}

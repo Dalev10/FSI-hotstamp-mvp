@@ -1,0 +1,8 @@
+{
+  "type": "METAL_BURST",
+  "params": {
+    "metalRatio": 0.8,
+    "meanIntervalS": 5
+  },
+  "durationS": 120
+}

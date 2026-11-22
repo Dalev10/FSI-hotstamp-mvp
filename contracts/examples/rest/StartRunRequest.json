@@ -1,0 +1,6 @@
+{
+  "scenarioId": "frente-frio",
+  "seed": 7,
+  "speedFactor": 10,
+  "controlMode": "PID"
+}

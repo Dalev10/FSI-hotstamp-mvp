@@ -1,0 +1,7 @@
+{
+  "type": "PNEUMATIC_LEAK",
+  "params": {
+    "cylinder": "STAMP",
+    "strokeFactor": 1.5
+  }
+}

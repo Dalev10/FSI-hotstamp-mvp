@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Heartbeat",
+  "description": "Cuerpo de POST /api/twin/commands/heartbeat. El primer latido arma el watchdog.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["agentId", "seq", "sentAt"],
+  "properties": {
+    "agentId": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "seq": { "type": "integer", "minimum": 0 },
+    "sentAt": { "type": "string", "format": "date-time" }
+  }
+}

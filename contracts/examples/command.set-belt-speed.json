@@ -1,0 +1,8 @@
+{
+  "commandId": "3f2b8c1e-9a4d-4e7b-8c6f-1a2b3c4d5e03",
+  "type": "SET_BELT_SPEED",
+  "params": {
+    "pwmDuty": 0.8
+  },
+  "issuedBy": "agent"
+}

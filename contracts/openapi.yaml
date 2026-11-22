@@ -1,0 +1,356 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: twin-java — gemelo digital de la estampadora
+  version: "1.0"
+  description: |
+    API REST del gemelo. Las rutas llegan desde el gateway (Nginx) conservando el prefijo `/api/twin`.
+
+    - El gateway exige `X-API-Key` en `/api/twin/commands` y `/api/twin/sim/*`; el gemelo no autentica.
+    - Los esquemas son cerrados: un campo desconocido es inválido. Al leer, los consumidores deben ignorar campos nuevos.
+    - Telemetría y eventos en tiempo real: `asyncapi.yaml` (`/ws/telemetry`).
+servers:
+  - url: http://localhost:8080
+    description: Gateway local (docker compose)
+paths:
+  /api/twin/state:
+    get:
+      operationId: getState
+      summary: Snapshot actual de la máquina
+      parameters:
+        - $ref: '#/components/parameters/GroundTruth'
+      responses:
+        '200':
+          description: Snapshot con la misma forma que la telemetría, sin `type`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/State' }
+  /api/twin/limits:
+    get:
+      operationId: getLimits
+      summary: Límites de comandos y ventana de proceso
+      description: El agente los usa para limitarse antes de enviar comandos.
+      responses:
+        '200':
+          description: Límites vigentes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Limits' }
+  /api/twin/commands:
+    post:
+      operationId: applyCommand
+      summary: Envía un comando a la máquina
+      description: |
+        Se aplica en el siguiente ciclo del motor. Un `commandId` repetido devuelve la respuesta original
+        con la cabecera `Idempotent-Replay: true` y no se vuelve a aplicar.
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Command' }
+      responses:
+        '202':
+          description: Comando aplicado.
+          headers:
+            Idempotent-Replay: { $ref: '#/components/headers/IdempotentReplay' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommandResult' }
+        '409':
+          description: Comando rechazado por una regla; `rule` indica cuál.
+          headers:
+            Idempotent-Replay: { $ref: '#/components/headers/IdempotentReplay' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommandResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '503':
+          description: El motor no respondió dentro de `apply-timeout-ms`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /api/twin/commands/heartbeat:
+    post:
+      operationId: heartbeat
+      summary: Latido del agente (watchdog)
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Heartbeat' }
+      responses:
+        '204':
+          description: Latido registrado.
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/twin/sim/scenarios:
+    get:
+      operationId: listScenarios
+      summary: Escenarios disponibles
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Lista de escenarios.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScenarioList' }
+  /api/twin/sim/scenario:
+    post:
+      operationId: startRun
+      summary: Inicia una corrida
+      description: 'Reemplaza la corrida en curso, que termina con `RUN_ENDED{reason: REPLACED}`.'
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartRunRequest' }
+      responses:
+        '201':
+          description: Corrida iniciada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunCreated' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/twin/sim/control:
+    post:
+      operationId: controlSimulation
+      summary: Pausa, reanuda, detiene o cambia la velocidad de la simulación
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimulationControlRequest' }
+      responses:
+        '200':
+          description: Estado de la simulación después de la acción.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulationStatus' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/twin/sim/faults:
+    get:
+      operationId: listFaults
+      summary: Catálogo de fallas y fallas activas
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Catálogo y fallas activas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FaultCatalog' }
+    post:
+      operationId: injectFault
+      summary: Inyecta una falla en la corrida actual
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FaultRequest' }
+      responses:
+        '201':
+          description: Falla inyectada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FaultCreated' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/twin/sim/faults/{faultId}:
+    delete:
+      operationId: clearFault
+      summary: Retira una falla activa
+      security:
+        - apiKey: []
+      parameters:
+        - name: faultId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Falla retirada.
+        '404': { $ref: '#/components/responses/NotFound' }
+  /actuator/health:
+    get:
+      operationId: health
+      summary: Salud del servicio (healthcheck de Compose)
+      responses:
+        '200':
+          description: Servicio sano.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: La valida el gateway; el gemelo no publica puertos.
+  parameters:
+    GroundTruth:
+      name: groundTruth
+      in: query
+      required: false
+      description: Incluye el bloque `groundTruth` (dashboard y evaluación). El agente no lo usa.
+      schema: { type: boolean, default: false }
+  headers:
+    IdempotentReplay:
+      description: Presente con valor `true` cuando la respuesta repite la de un `commandId` ya procesado.
+      schema: { type: string, enum: ['true'] }
+  responses:
+    BadRequest:
+      description: JSON mal formado o que no cumple el esquema.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: El recurso no existe.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    State: { $ref: './schemas/telemetry.schema.json#/$defs/state' }
+    Command: { $ref: './schemas/command.schema.json' }
+    CommandResult: { $ref: './schemas/command-result.schema.json' }
+    Heartbeat: { $ref: './schemas/heartbeat.schema.json' }
+    FaultRequest: { $ref: './schemas/fault.schema.json' }
+    Range:
+      type: object
+      additionalProperties: false
+      required: [min, max]
+      properties:
+        min: { type: number }
+        max: { type: number }
+    Limits:
+      type: object
+      additionalProperties: false
+      required: [process, setpointMaxStepC, pidMaxStepFraction, kp, ki, kd, beltPwm]
+      properties:
+        process:
+          type: object
+          additionalProperties: false
+          required: [windowMinC, windowMaxC, defaultSetpointC]
+          properties:
+            windowMinC: { type: number }
+            windowMaxC: { type: number }
+            defaultSetpointC: { type: number }
+        setpointMaxStepC: { type: number, exclusiveMinimum: 0 }
+        pidMaxStepFraction: { type: number, exclusiveMinimum: 0, maximum: 1 }
+        kp: { $ref: '#/components/schemas/Range' }
+        ki: { $ref: '#/components/schemas/Range' }
+        kd: { $ref: '#/components/schemas/Range' }
+        beltPwm:
+          type: object
+          additionalProperties: false
+          required: [min, max, maxStep]
+          properties:
+            min: { type: number, minimum: 0, maximum: 1 }
+            max: { type: number, minimum: 0, maximum: 1 }
+            maxStep: { type: number, exclusiveMinimum: 0 }
+    ScenarioSummary:
+      type: object
+      additionalProperties: false
+      required: [id, description, durationSimS]
+      properties:
+        id: { type: string }
+        description: { type: string }
+        durationSimS: { type: number, exclusiveMinimum: 0 }
+    ScenarioList:
+      type: array
+      items: { $ref: '#/components/schemas/ScenarioSummary' }
+    StartRunRequest:
+      type: object
+      additionalProperties: false
+      required: [scenarioId, speedFactor]
+      properties:
+        scenarioId: { type: string }
+        seed: { type: integer, description: Si falta, se usa la del escenario. }
+        speedFactor: { type: integer, minimum: 1, maximum: 60 }
+        controlMode: { $ref: './schemas/telemetry.schema.json#/$defs/controlMode' }
+    RunCreated:
+      type: object
+      additionalProperties: false
+      required: [runId]
+      properties:
+        runId: { type: string, format: uuid }
+    SimulationControlRequest:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: { enum: [PAUSE, RESUME, STOP, SET_SPEED] }
+        speedFactor: { type: integer, minimum: 1, maximum: 60 }
+      if:
+        required: [action]
+        properties: { action: { const: SET_SPEED } }
+      then: { required: [speedFactor] }
+      else: { properties: { speedFactor: false } }
+    SimulationStatus:
+      type: object
+      additionalProperties: false
+      required: [runId, scenarioId, status, speedFactor, simTimeMs]
+      properties:
+        runId: { type: [string, 'null'], format: uuid }
+        scenarioId: { type: [string, 'null'] }
+        status: { enum: [IDLE, RUNNING, PAUSED, ENDED] }
+        speedFactor: { type: integer, minimum: 1, maximum: 60 }
+        simTimeMs: { type: integer, minimum: 0 }
+    FaultCatalogEntry:
+      type: object
+      additionalProperties: false
+      required: [type, params, defaults]
+      properties:
+        type: { $ref: './schemas/fault.schema.json#/$defs/faultType' }
+        params: { type: array, items: { type: string }, description: Nombres de los parámetros que acepta. }
+        defaults: { type: object, description: Valor por defecto de cada parámetro que lo tiene. }
+    ActiveFault:
+      type: object
+      additionalProperties: false
+      required: [faultId, type, params, startAtSimMs, durationS]
+      properties:
+        faultId: { type: string, format: uuid }
+        type: { $ref: './schemas/fault.schema.json#/$defs/faultType' }
+        params: { type: object }
+        startAtSimMs: { type: integer, minimum: 0 }
+        durationS: { type: [number, 'null'], exclusiveMinimum: 0 }
+    FaultCatalog:
+      type: object
+      additionalProperties: false
+      required: [catalog, active]
+      properties:
+        catalog: { type: array, items: { $ref: '#/components/schemas/FaultCatalogEntry' } }
+        active: { type: array, items: { $ref: '#/components/schemas/ActiveFault' } }
+    FaultCreated:
+      type: object
+      additionalProperties: false
+      required: [faultId]
+      properties:
+        faultId: { type: string, format: uuid }
+    Problem:
+      description: Error según RFC 9457 (ProblemDetail). `detail` va en español.
+      type: object
+      additionalProperties: false
+      required: [title, status]
+      properties:
+        type: { type: string, format: uri-reference, default: 'about:blank', description: Si falta vale `about:blank` (RFC 9457). }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+    Health:
+      description: Respuesta de Spring Boot Actuator; abierta porque su forma la define Actuator.
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }

@@ -1,0 +1,6 @@
+{
+  "type": "OFFSET_DRIFT",
+  "params": {
+    "driftMvPerMin": 0.02
+  }
+}

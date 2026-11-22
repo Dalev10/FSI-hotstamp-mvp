@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Command",
+  "description": "Cuerpo de POST /api/twin/commands. Aquí solo se valida la forma: los rangos y pasos máximos los aplica el gemelo, que responde 409 con la regla violada.",
+  "type": "object",
+  "allOf": [{ "$ref": "#/$defs/typedParams" }],
+  "required": ["commandId", "type", "issuedBy"],
+  "properties": {
+    "commandId": { "type": "string", "format": "uuid", "description": "Clave de idempotencia." },
+    "type": { "$ref": "#/$defs/commandType" },
+    "params": { "type": "object" },
+    "issuedBy": {
+      "enum": ["agent", "dashboard"],
+      "description": "agent solo puede enviar SET_SETPOINT, SET_PID y SET_BELT_SPEED. scenario queda reservado para las acciones internas de un escenario."
+    },
+    "reason": { "type": "string", "maxLength": 500 }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "commandType": {
+      "enum": ["SET_SETPOINT", "SET_PID", "SET_BELT_SPEED", "SET_MODE", "START", "STOP", "EMERGENCY_STOP", "RESET", "ACK_ALARM"]
+    },
+    "issuer": { "enum": ["agent", "dashboard", "scenario"] },
+    "typedParams": {
+      "description": "params según type. Los comandos sin parámetros aceptan params ausente o {}.",
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "SET_SETPOINT" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["setpointC"],
+                "properties": { "setpointC": { "type": "number" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "SET_PID" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kp", "ki", "kd"],
+                "properties": {
+                  "kp": { "type": "number", "description": "%/°C" },
+                  "ki": { "type": "number", "description": "%/(°C·s)" },
+                  "kd": { "type": "number", "description": "%·s/°C" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "SET_BELT_SPEED" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["pwmDuty"],
+                "properties": { "pwmDuty": { "type": "number" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "SET_MODE" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["mode"],
+                "properties": { "mode": { "$ref": "telemetry.schema.json#/$defs/controlMode" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "ACK_ALARM" } } },
+          "then": {
+            "required": ["params"],
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["code"],
+                "properties": {
+                  "code": { "anyOf": [{ "$ref": "telemetry.schema.json#/$defs/alarmCode" }, { "const": "ALL" }] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["START", "STOP", "EMERGENCY_STOP", "RESET"] } } },
+          "then": { "properties": { "params": { "type": "object", "maxProperties": 0 } } }
+        }
+      ]
+    },
+    "scenarioCommand": {
+      "description": "Comando dentro de un escenario: sin commandId ni issuedBy, que los asigna el gemelo.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/typedParams" }],
+      "required": ["type"],
+      "properties": {
+        "type": { "$ref": "#/$defs/commandType" },
+        "params": { "type": "object" }
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

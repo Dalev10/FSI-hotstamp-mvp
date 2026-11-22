@@ -1,0 +1,7 @@
+{
+  "type": "HEATER_DEGRADATION",
+  "params": {
+    "finalEfficiencyFactor": 0.7,
+    "rampS": 1800
+  }
+}

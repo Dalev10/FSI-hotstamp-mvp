@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scenario",
+  "description": "Archivo de escenario (twin-java/src/main/resources/scenarios/*.json). Misma semilla, mismo escenario y mismos comandos producen la misma serie de mensajes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "description", "seed", "durationSimS", "controlMode", "initialConditions", "arrivals", "ambientProfile", "actions", "faults"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "description": { "type": "string", "minLength": 1 },
+    "seed": { "type": "integer" },
+    "durationSimS": { "type": "number", "exclusiveMinimum": 0 },
+    "controlMode": { "$ref": "telemetry.schema.json#/$defs/controlMode" },
+    "initialConditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platenTempC", "ambientC"],
+      "properties": {
+        "platenTempC": { "type": "number" },
+        "ambientC": { "type": "number" }
+      }
+    },
+    "arrivals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meanIntervalS", "metalRatio"],
+      "properties": {
+        "meanIntervalS": { "type": "number", "exclusiveMinimum": 0, "description": "Media del tiempo exponencial entre llegadas." },
+        "metalRatio": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "ambientProfile": {
+      "description": "Temperatura ambiente lineal por tramos. Vacío: se mantiene initialConditions.ambientC.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["atS", "ambientC"],
+        "properties": {
+          "atS": { "type": "number", "minimum": 0 },
+          "ambientC": { "type": "number" }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["atS", "command"],
+        "properties": {
+          "atS": { "type": "number", "minimum": 0 },
+          "command": { "$ref": "command.schema.json#/$defs/scenarioCommand" }
+        }
+      }
+    },
+    "faults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "allOf": [{ "$ref": "fault.schema.json#/$defs/faultSpec" }],
+        "required": ["atS"],
+        "properties": { "atS": { "type": "number", "minimum": 0 } },
+        "unevaluatedProperties": false
+      }
+    }
+  }
+}

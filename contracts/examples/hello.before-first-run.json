@@ -1,0 +1,60 @@
+{
+  "type": "hello",
+  "schemaVersion": "1.0",
+  "seq": 0,
+  "runId": null,
+  "ts": "2026-11-21T21:00:00.000Z",
+  "simTs": null,
+  "simTimeMs": 0,
+  "snapshot": {
+    "speedFactor": 1,
+    "state": "OFF",
+    "thermal": {
+      "tempC": 25.03,
+      "setpointC": 62.5,
+      "band": "LOW",
+      "heaterDuty": 0.0,
+      "ssr": false,
+      "tcMillivolts": 0.038,
+      "ambientC": 24.1
+    },
+    "conveyor": {
+      "running": false,
+      "pwmDuty": 0.7,
+      "speedMps": 0.0,
+      "queueLength": 0
+    },
+    "sensors": {
+      "inductive": 0,
+      "photoelectric": 0
+    },
+    "valves": {
+      "discard": "RETRACTED",
+      "stamp": "RETRACTED",
+      "stampStrokeMs": null
+    },
+    "counters": {
+      "metalDiscarded": 0,
+      "plasticStamped": 0,
+      "metalEscaped": 0,
+      "piecesArrived": 0
+    },
+    "energy": {
+      "heaterWh": 0.0,
+      "motorWh": 0.0
+    },
+    "control": {
+      "mode": "PID",
+      "kp": 10.0,
+      "ki": 0.1,
+      "kd": 0.0,
+      "supervisor": "NONE",
+      "agentHeartbeatAgeMs": null
+    },
+    "safety": {
+      "estop": false,
+      "interlock": null,
+      "activeAlarms": []
+    }
+  }
+}
