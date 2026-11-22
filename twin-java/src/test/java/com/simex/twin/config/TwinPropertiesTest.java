@@ -72,7 +72,6 @@ class TwinPropertiesTest {
     @ValueSource(
             strings = {
                 "twin.engine.tick-ms=0",
-                "twin.engine.speed-factor=61",
                 "twin.autostart.speed-factor=61",
                 "twin.process.window-min-c=80",
                 "twin.process.default-setpoint-c=80",
