@@ -1,0 +1,6 @@
+{
+  "title": "Conflict",
+  "status": 409,
+  "detail": "No hay una corrida activa",
+  "instance": "/api/twin/sim/faults"
+}
