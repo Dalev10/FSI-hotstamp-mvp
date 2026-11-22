@@ -1,11 +1,16 @@
 package com.simex.twin.config;
 
+import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.ControlMode;
-import com.simex.twin.domain.plant.sensing.ColdJunctionMode;
+import com.simex.twin.domain.control.thermal.FirmwareParameters;
+import com.simex.twin.domain.plant.sensing.SensingParameters;
+import com.simex.twin.domain.plant.thermal.ThermalParameters;
+import com.simex.twin.domain.shared.SimDuration;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -42,6 +47,25 @@ public record TwinProperties(
     public boolean isOverTempAboveWindow() {
         return safety.overTempTripC() > process.windowMaxC();
     }
+
+    // Euler explícito es estable y no oscila mientras dt < τ (sección 4.1 del plan).
+    @AssertTrue(message = "la constante de tiempo del troquel (rth-k-per-w · capacitance-j-per-k) debe superar el tick")
+    public boolean isPlatenTimeConstantAboveTick() {
+        return thermal.rthKPerW() * thermal.capacitanceJPerK() * MS_PER_SECOND > engine.tickMs();
+    }
+
+    @AssertTrue(message = "thermal.sensor-tau-ms debe superar engine.tick-ms")
+    public boolean isSensorTauAboveTick() {
+        return thermal.sensorTauMs() > engine.tickMs();
+    }
+
+    @AssertTrue(message = "thermal.transport-delay-ms debe ser múltiplo de engine.tick-ms")
+    public boolean isTransportDelayMultipleOfTick() {
+        // Con tick-ms ≤ 0 ya falla @Positive; aquí solo se evita dividir por cero.
+        return engine.tickMs() > 0 && thermal.transportDelayMs() % engine.tickMs() == 0;
+    }
+
+    private static final double MS_PER_SECOND = 1000.0;
 
     public record Engine(
             @Positive long tickMs,
@@ -95,12 +119,26 @@ public record TwinProperties(
             @PositiveOrZero long transportDelayMs,
             @Positive long sensorTauMs,
             double initialTempC,
-            @PositiveOrZero double pieceHeatJ) {}
+            @PositiveOrZero double pieceHeatJ) {
+
+        public ThermalParameters toParameters() {
+            return new ThermalParameters(
+                    heaterPowerW,
+                    heaterEfficiency,
+                    capacitanceJPerK,
+                    rthKPerW,
+                    new SimDuration(transportDelayMs),
+                    new SimDuration(sensorTauMs),
+                    initialTempC,
+                    pieceHeatJ);
+        }
+    }
 
     public record Sensing(
             @Positive double seebeckMvPerC,
             @Positive double amplifierGain,
-            @Positive int adcBits,
+            @Positive @Max(30) int adcBits, // las cuentas viajan en un int
+
             @Positive double adcVrefV,
             double inputOffsetMv,
             @PositiveOrZero double noiseSigmaC,
@@ -113,6 +151,18 @@ public record TwinProperties(
         @AssertTrue(message = "open-tc-counts-threshold debe ser alcanzable con adc-bits")
         public boolean isOpenTcThresholdReachable() {
             return openTcCountsThreshold <= (1L << adcBits) - 1;
+        }
+
+        /** El hardware real de la cadena de medición (planta). */
+        public SensingParameters toPlantParameters() {
+            return new SensingParameters(
+                    seebeckMvPerC, amplifierGain, adcBits, adcVrefV, inputOffsetMv, noiseSigmaC, ambientNoiseSigmaC);
+        }
+
+        /** Las constantes que conoce el firmware (control). */
+        public FirmwareParameters toFirmwareParameters() {
+            return new FirmwareParameters(
+                    seebeckMvPerC, amplifierGain, adcBits, adcVrefV, coldJunction, fixedColdJunctionC);
         }
     }
 
