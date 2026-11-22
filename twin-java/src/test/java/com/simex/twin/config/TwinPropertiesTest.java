@@ -47,6 +47,7 @@ class TwinPropertiesTest {
             assertThat(p.control().legacy().toParameters()).isEqualTo(DefaultParameters.legacy());
             assertThat(p.control().ssrWindowMs()).isEqualTo(DefaultParameters.SSR_WINDOW.ms());
             assertThat(p.process().defaultSetpointC()).isEqualTo(DefaultParameters.DEFAULT_SETPOINT_C);
+            assertThat(p.toControlParameters()).isEqualTo(DefaultParameters.control());
         });
     }
 
@@ -88,6 +89,7 @@ class TwinPropertiesTest {
                 "twin.pneumatics.stroke-ms=1600",
                 "twin.safety.over-temp-trip-c=70",
                 "twin.commands.kp.min=70",
+                "twin.commands.pid-min-step-range-fraction=0",
                 "twin.commands.belt-pwm.max=0.3"
             })
     void rejectsInvalidConfiguration(String property) {

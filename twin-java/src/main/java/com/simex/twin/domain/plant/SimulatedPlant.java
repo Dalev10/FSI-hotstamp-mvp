@@ -131,6 +131,16 @@ public final class SimulatedPlant implements PlantPort {
         return thermal.platenTempC();
     }
 
+    /** Temperatura ambiente real, con las fallas (verdad de terreno). */
+    public double realAmbientC() {
+        return modifiers.get().effectiveAmbientC(ambientCAtMs.applyAsDouble(now.ms()));
+    }
+
+    /** Eficiencia real de la resistencia, con las fallas (verdad de terreno). */
+    public double heaterEfficiency() {
+        return parameters.thermal().heaterEfficiency() * modifiers.get().heaterEfficiencyFactor();
+    }
+
     /** Potencia eléctrica de la resistencia en este instante (sin η). */
     public double heaterPowerW() {
         return outputs.ssr() ? parameters.thermal().heaterPowerW() : 0;

@@ -97,6 +97,19 @@ class PidControllerTest extends TemperatureControllerContract {
     }
 
     @Test
+    void restartIsAColdStartWithAnEmptyIntegral() {
+        PidController pid = pid();
+        for (int i = 0; i < 600; i++) {
+            step(pid, 62.0); // acumula integral
+        }
+
+        pid.restart();
+
+        // Sin integral previa: u = kp·e + ki·e·Ts = 10·2,5 + 0,1·2,5·1 en el primer muestreo.
+        assertThat(sample(pid, 60.0).value()).isCloseTo(25.25, within(1e-9));
+    }
+
+    @Test
     void kpMustBePositive() {
         assertThatThrownBy(() -> pid().setGains(0, 0.1, 0)).isInstanceOf(DomainException.class);
         assertThatThrownBy(() ->

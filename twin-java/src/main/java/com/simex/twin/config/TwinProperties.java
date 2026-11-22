@@ -1,5 +1,9 @@
 package com.simex.twin.config;
 
+import com.simex.twin.domain.control.ControlParameters;
+import com.simex.twin.domain.control.ProcessParameters;
+import com.simex.twin.domain.control.command.CommandLimits;
+import com.simex.twin.domain.control.safety.SafetyParameters;
 import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.ControlMode;
 import com.simex.twin.domain.control.thermal.FirmwareParameters;
@@ -10,6 +14,7 @@ import com.simex.twin.domain.plant.conveyor.ConveyorParameters;
 import com.simex.twin.domain.plant.pneumatics.PneumaticParameters;
 import com.simex.twin.domain.plant.sensing.SensingParameters;
 import com.simex.twin.domain.plant.thermal.ThermalParameters;
+import com.simex.twin.domain.shared.DutyCycle;
 import com.simex.twin.domain.shared.SimDuration;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
@@ -82,6 +87,25 @@ public record TwinProperties(
 
     private static final double MS_PER_SECOND = 1000.0;
 
+    /** Parámetros del control (el firmware de la máquina). */
+    public ControlParameters toControlParameters() {
+        return new ControlParameters(
+                sensing.toFirmwareParameters(),
+                control.pid().toParameters(),
+                control.legacy().toParameters(),
+                new SimDuration(control.ssrWindowMs()),
+                control.defaultMode(),
+                new DutyCycle(conveyor.defaultPwm()),
+                process.toParameters(),
+                new SafetyParameters(
+                        sensing.openTcCountsThreshold(),
+                        safety.overTempTripC(),
+                        new SimDuration(pneumatics.strokeTimeoutMs()),
+                        safety.watchdogTimeoutMs()),
+                new SimDuration(pneumatics.stampDwellMs()),
+                commands.toLimits(process));
+    }
+
     /** Parámetros físicos de la planta simulada. */
     public PlantParameters toPlantParameters() {
         return new PlantParameters(
@@ -129,6 +153,17 @@ public record TwinProperties(
         @AssertTrue(message = "default-setpoint-c debe estar dentro de la ventana de proceso")
         public boolean isDefaultSetpointInWindow() {
             return windowMinC <= defaultSetpointC && defaultSetpointC <= windowMaxC;
+        }
+
+        public ProcessParameters toParameters() {
+            return new ProcessParameters(
+                    windowMinC,
+                    windowMaxC,
+                    bandHysteresisC,
+                    new SimDuration(stableMs),
+                    defaultSetpointC,
+                    new SimDuration(heatupTimeoutMs),
+                    new SimDuration(thermalWaitAlarmMs));
         }
     }
 
@@ -286,12 +321,30 @@ public record TwinProperties(
             @DecimalMin(value = "0", inclusive = false) @DecimalMax("1")
             double pidMaxStepFraction,
 
+            @DecimalMin(value = "0", inclusive = false) @DecimalMax("1")
+            double pidMinStepRangeFraction,
+
             @NotNull @Valid Range kp,
             @NotNull @Valid Range ki,
             @NotNull @Valid Range kd,
             @NotNull @Valid BeltPwm beltPwm,
             @Positive long applyTimeoutMs,
             @Positive int idempotencyCapacity) {
+
+        /** Los límites de las reglas de comandos; el setpoint queda acotado a la ventana de proceso. */
+        public CommandLimits toLimits(ProcessSettings process) {
+            return new CommandLimits(
+                    process.windowMinC(),
+                    process.windowMaxC(),
+                    setpointMaxStepC,
+                    pidMaxStepFraction,
+                    pidMinStepRangeFraction,
+                    new CommandLimits.Range(kp.min(), kp.max()),
+                    new CommandLimits.Range(ki.min(), ki.max()),
+                    new CommandLimits.Range(kd.min(), kd.max()),
+                    new CommandLimits.Range(beltPwm.min(), beltPwm.max()),
+                    beltPwm.maxStep());
+        }
 
         public record Range(@PositiveOrZero double min, double max) {
 

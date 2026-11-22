@@ -81,6 +81,19 @@ public final class PidController implements TemperatureController {
         return new ControllerState(output);
     }
 
+    /**
+     * Arranque en frío al reactivar el térmico: integral en 0 y sin historia. No es sin salto a propósito: desde la
+     * salida 0 del térmico apagado, un paso sin salto empezaría con la integral muy negativa y calentaría lento.
+     */
+    public void restart() {
+        integral = 0;
+        filteredDerivative = 0;
+        previousMeasurementC = Double.NaN;
+        pendingBumplessOutput = Double.NaN;
+        output = new Percent(0);
+        clock.sampleNow();
+    }
+
     /** Ganancias nuevas sin salto en la salida: {@code I} absorbe el cambio de los términos P y D. */
     public void setGains(double newKp, double newKi, double newKd) {
         requirePositiveKp(newKp);
