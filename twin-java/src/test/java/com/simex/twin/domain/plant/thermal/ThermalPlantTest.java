@@ -91,8 +91,13 @@ class ThermalPlantTest {
         ThermalPlant degraded = new ThermalPlant(DefaultParameters.thermal(), TICK);
         ThermalPlant coldFront = new ThermalPlant(DefaultParameters.thermal(), TICK);
         for (double t = 0; t < 10 * TAU_S; t += TICK.seconds()) {
-            degraded.advance(1.0, AMBIENT_C, 0, new PlantModifiers(0.5, 1, 0, 0, 1, false), TICK);
-            coldFront.advance(1.0, AMBIENT_C, 0, new PlantModifiers(1, 0.5, 10, 0, 1, false), TICK);
+            degraded.advance(1.0, AMBIENT_C, 0, PlantModifiers.neutral().withHeaterEfficiencyFactor(0.5), TICK);
+            coldFront.advance(
+                    1.0,
+                    AMBIENT_C,
+                    0,
+                    PlantModifiers.neutral().withRthFactor(0.5).withAmbientDropC(10),
+                    TICK);
         }
 
         assertThat(degraded.platenTempC()).isCloseTo(AMBIENT_C + DELTA_T_FULL_POWER_C / 2, within(0.5));

@@ -3,6 +3,9 @@ package com.simex.twin.config;
 import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.ControlMode;
 import com.simex.twin.domain.control.thermal.FirmwareParameters;
+import com.simex.twin.domain.plant.PlantParameters;
+import com.simex.twin.domain.plant.conveyor.ConveyorParameters;
+import com.simex.twin.domain.plant.pneumatics.PneumaticParameters;
 import com.simex.twin.domain.plant.sensing.SensingParameters;
 import com.simex.twin.domain.plant.thermal.ThermalParameters;
 import com.simex.twin.domain.shared.SimDuration;
@@ -66,6 +69,15 @@ public record TwinProperties(
     }
 
     private static final double MS_PER_SECOND = 1000.0;
+
+    /** Parámetros físicos de la planta simulada. */
+    public PlantParameters toPlantParameters() {
+        return new PlantParameters(
+                thermal.toParameters(),
+                sensing.toPlantParameters(),
+                conveyor.toPlantParameters(),
+                pneumatics.toPlantParameters());
+    }
 
     public record Engine(
             @Positive long tickMs,
@@ -208,6 +220,24 @@ public record TwinProperties(
         public boolean isDiscardFaceOrdered() {
             return discardFaceFromM < discardFaceToM;
         }
+
+        /** La banda física; {@code default-pwm} es del control. */
+        public ConveyorParameters toPlantParameters() {
+            return new ConveyorParameters(
+                    inductiveAtM,
+                    stationAtM,
+                    exitQaAtM,
+                    pieceLengthM,
+                    minSpacingM,
+                    nominalSpeedMps,
+                    accelMps2,
+                    motorRatedW,
+                    discardFaceFromM,
+                    discardFaceToM,
+                    missProbBase,
+                    missProbSpeedGain,
+                    missRefSpeedMps);
+        }
     }
 
     public record Pneumatics(
@@ -218,6 +248,11 @@ public record TwinProperties(
         @AssertTrue(message = "stroke-ms debe ser menor que stroke-timeout-ms")
         public boolean isStrokeShorterThanTimeout() {
             return strokeMs < strokeTimeoutMs;
+        }
+
+        /** Los cilindros físicos; {@code stroke-timeout-ms} es del interlock (control). */
+        public PneumaticParameters toPlantParameters() {
+            return new PneumaticParameters(strokeMs, new SimDuration(stampDwellMs));
         }
     }
 
