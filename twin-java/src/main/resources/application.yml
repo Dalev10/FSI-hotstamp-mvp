@@ -1,0 +1,39 @@
+server: { port: 8080, shutdown: graceful }
+spring:
+  application.name: twin
+  threads.virtual.enabled: true
+management:
+  endpoints.web.exposure.include: health,info,metrics
+  endpoint.health.probes.enabled: true
+twin:
+  engine:      { tick-ms: 100, wall-cycle-ms: 100, speed-factor: 1, max-speed-factor: 60 }
+  telemetry:   { period-sim-ms: 1000, allowed-origins: "*", outbound-queue-capacity: 10000 }
+  autostart:   { scenario: nominal, seed: 42, speed-factor: 1 }        # scenario vacío = no arrancar
+  process:     { window-min-c: 50.0, window-max-c: 75.0, band-hysteresis-c: 0.5, stable-ms: 2000,
+                 default-setpoint-c: 62.5, heatup-timeout-ms: 900000, thermal-wait-alarm-ms: 120000 }
+  thermal:     { heater-power-w: 1500, heater-efficiency: 0.95, capacitance-j-per-k: 8000,
+                 rth-k-per-w: 0.115, transport-delay-ms: 5000, sensor-tau-ms: 4000,
+                 initial-temp-c: 25.0, piece-heat-j: 2500 }
+  sensing:     { seebeck-mv-per-c: 0.041, amplifier-gain: 250, adc-bits: 12, adc-vref-v: 3.3,
+                 input-offset-mv: 0.0, noise-sigma-c: 0.3, cold-junction: AMBIENT_SENSOR,
+                 fixed-cold-junction-c: 25.0, ambient-noise-sigma-c: 0.1, open-tc-counts-threshold: 4090 }
+  control:
+    default-mode: PID
+    pid:       { kp: 10.0, ki: 0.1, kd: 0.0, sample-ms: 1000, derivative-filter-n: 10 }
+    ssr-window-ms: 2000
+    legacy:    { sample-ms: 1010, threshold-c: 50.0 }
+  conveyor:    { length-m: 2.0, inductive-at-m: 0.60, station-at-m: 1.50, exit-qa-at-m: 1.95,
+                 piece-length-m: 0.06, min-spacing-m: 0.15, nominal-speed-mps: 0.25, accel-mps2: 2.0,
+                 default-pwm: 0.7, motor-rated-w: 100, discard-face-from-m: -0.01, discard-face-to-m: 0.07,
+                 miss-prob-base: 0.003, miss-prob-speed-gain: 0.05, miss-ref-speed-mps: 0.15 }
+  pneumatics:  { stroke-ms: 350, stamp-dwell-ms: 1000, stroke-timeout-ms: 1500 }
+  safety:      { over-temp-trip-c: 90.0, watchdog-timeout-ms: 10000 }
+  commands:
+    setpoint-max-step-c: 5.0
+    pid-max-step-fraction: 0.20
+    kp: { min: 0.5, max: 60.0 }
+    ki: { min: 0.0, max: 2.0 }
+    kd: { min: 0.0, max: 120.0 }
+    belt-pwm: { min: 0.4, max: 1.0, max-step: 0.2 }
+    apply-timeout-ms: 2000
+    idempotency-capacity: 1000
