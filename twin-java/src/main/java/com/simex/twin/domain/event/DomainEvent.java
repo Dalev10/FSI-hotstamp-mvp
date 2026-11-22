@@ -7,6 +7,7 @@ import com.simex.twin.domain.control.command.IssuedCommand.Issuer;
 import com.simex.twin.domain.control.command.Rule;
 import com.simex.twin.domain.control.safety.Supervisor;
 import com.simex.twin.domain.control.sequence.MachineState;
+import com.simex.twin.domain.control.thermal.ControlMode;
 import com.simex.twin.domain.fault.FaultType;
 import com.simex.twin.domain.plant.conveyor.ExitResult;
 import java.util.Map;
@@ -52,4 +53,22 @@ public sealed interface DomainEvent {
 
     /** Solo para la vista groundTruth. */
     record FaultCleared(String faultId, FaultType type) implements DomainEvent {}
+
+    /**
+     * Inicio de una corrida. En la vista pública el adaptador omite {@code scenarioId}: el nombre revela la falla.
+     *
+     * @param parameters parámetros de control iniciales (nada del modelo térmico)
+     */
+    record RunStarted(String scenarioId, long seed, ControlMode controlMode, int speedFactor, RunParameters parameters)
+            implements DomainEvent {}
+
+    record RunParameters(double setpointC, double kp, double ki, double kd, double beltPwm) {}
+
+    record RunEnded(RunEndReason reason) implements DomainEvent {}
+
+    enum RunEndReason {
+        COMPLETED,
+        STOPPED,
+        REPLACED
+    }
 }
