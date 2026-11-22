@@ -1,0 +1,20 @@
+# Tabla de verdad LEGACY (16 filas). GENERADA a partir de las ecuaciones de la sección 4.5 del plan, no
+# transcrita de la tabla original del ITO 2 (decisión 1 de la T5): sirve como guardia contra cambios, no como
+# verificación independiente. Si aparece la tabla original, reemplazar este archivo por su transcripción.
+S,SP,SI,T,Metal,Plastico,Verde,Resistencia,Alarma,Motor
+0,0,0,0,0,0,0,0,0,0
+0,0,0,1,0,0,0,0,0,0
+0,0,1,0,0,0,0,0,0,0
+0,0,1,1,0,0,0,0,0,0
+0,1,0,0,0,0,0,0,0,0
+0,1,0,1,0,0,0,0,0,0
+0,1,1,0,0,0,0,0,0,0
+0,1,1,1,0,0,0,0,0,0
+1,0,0,0,0,0,0,1,0,1
+1,0,0,1,0,0,1,0,0,1
+1,0,1,0,0,0,0,0,1,0
+1,0,1,1,0,0,1,0,1,0
+1,1,0,0,0,0,0,1,0,0
+1,1,0,1,0,1,1,0,0,0
+1,1,1,0,1,0,0,1,0,1
+1,1,1,1,1,0,1,0,0,1

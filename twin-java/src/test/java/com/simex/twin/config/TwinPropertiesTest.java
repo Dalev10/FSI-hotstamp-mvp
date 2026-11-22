@@ -43,6 +43,10 @@ class TwinPropertiesTest {
             assertThat(p.engine().tickMs()).isEqualTo(DefaultParameters.TICK.ms());
             assertThat(p.toPlantParameters()).isEqualTo(DefaultParameters.plant());
             assertThat(p.sensing().toFirmwareParameters()).isEqualTo(DefaultParameters.firmware());
+            assertThat(p.control().pid().toParameters()).isEqualTo(DefaultParameters.pid());
+            assertThat(p.control().legacy().toParameters()).isEqualTo(DefaultParameters.legacy());
+            assertThat(p.control().ssrWindowMs()).isEqualTo(DefaultParameters.SSR_WINDOW.ms());
+            assertThat(p.process().defaultSetpointC()).isEqualTo(DefaultParameters.DEFAULT_SETPOINT_C);
         });
     }
 
@@ -76,6 +80,8 @@ class TwinPropertiesTest {
                 "twin.thermal.sensor-tau-ms=100",
                 "twin.thermal.transport-delay-ms=5050",
                 "twin.sensing.adc-bits=31",
+                "twin.control.pid.sample-ms=1050",
+                "twin.control.ssr-window-ms=2050",
                 "twin.sensing.open-tc-counts-threshold=5000",
                 "twin.conveyor.station-at-m=0.5",
                 "twin.conveyor.discard-face-to-m=-0.05",

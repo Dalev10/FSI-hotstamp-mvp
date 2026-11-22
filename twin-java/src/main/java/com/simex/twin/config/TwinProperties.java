@@ -3,6 +3,8 @@ package com.simex.twin.config;
 import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.ControlMode;
 import com.simex.twin.domain.control.thermal.FirmwareParameters;
+import com.simex.twin.domain.control.thermal.LegacyParameters;
+import com.simex.twin.domain.control.thermal.PidParameters;
 import com.simex.twin.domain.plant.PlantParameters;
 import com.simex.twin.domain.plant.conveyor.ConveyorParameters;
 import com.simex.twin.domain.plant.pneumatics.PneumaticParameters;
@@ -66,6 +68,16 @@ public record TwinProperties(
     public boolean isTransportDelayMultipleOfTick() {
         // Con tick-ms ≤ 0 ya falla @Positive; aquí solo se evita dividir por cero.
         return engine.tickMs() > 0 && thermal.transportDelayMs() % engine.tickMs() == 0;
+    }
+
+    @AssertTrue(message = "control.pid.sample-ms debe ser múltiplo de engine.tick-ms")
+    public boolean isPidSampleMultipleOfTick() {
+        return engine.tickMs() > 0 && control.pid().sampleMs() % engine.tickMs() == 0;
+    }
+
+    @AssertTrue(message = "control.ssr-window-ms debe ser múltiplo de engine.tick-ms")
+    public boolean isSsrWindowMultipleOfTick() {
+        return engine.tickMs() > 0 && control.ssrWindowMs() % engine.tickMs() == 0;
     }
 
     private static final double MS_PER_SECOND = 1000.0;
@@ -189,9 +201,19 @@ public record TwinProperties(
                 @PositiveOrZero double ki,
                 @PositiveOrZero double kd,
                 @Positive long sampleMs,
-                @Positive int derivativeFilterN) {}
+                @Positive int derivativeFilterN) {
 
-        public record Legacy(@Positive long sampleMs, double thresholdC) {}
+            public PidParameters toParameters() {
+                return new PidParameters(kp, ki, kd, new SimDuration(sampleMs), derivativeFilterN);
+            }
+        }
+
+        public record Legacy(@Positive long sampleMs, double thresholdC) {
+
+            public LegacyParameters toParameters() {
+                return new LegacyParameters(new SimDuration(sampleMs), thresholdC);
+            }
+        }
     }
 
     public record Conveyor(

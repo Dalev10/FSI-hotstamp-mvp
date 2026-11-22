@@ -2,6 +2,8 @@ package com.simex.twin.domain;
 
 import com.simex.twin.domain.control.thermal.ColdJunctionMode;
 import com.simex.twin.domain.control.thermal.FirmwareParameters;
+import com.simex.twin.domain.control.thermal.LegacyParameters;
+import com.simex.twin.domain.control.thermal.PidParameters;
 import com.simex.twin.domain.plant.PlantParameters;
 import com.simex.twin.domain.plant.conveyor.ConveyorParameters;
 import com.simex.twin.domain.plant.pneumatics.PneumaticParameters;
@@ -43,5 +45,16 @@ public final class DefaultParameters {
 
     public static FirmwareParameters firmware() {
         return new FirmwareParameters(0.041, 250, 12, 3.3, ColdJunctionMode.AMBIENT_SENSOR, 25.0);
+    }
+
+    public static final double DEFAULT_SETPOINT_C = 62.5;
+    public static final SimDuration SSR_WINDOW = new SimDuration(2000);
+
+    public static PidParameters pid() {
+        return new PidParameters(10.0, 0.1, 0.0, new SimDuration(1000), 10);
+    }
+
+    public static LegacyParameters legacy() {
+        return new LegacyParameters(new SimDuration(1010), 50.0);
     }
 }
