@@ -1,7 +1,7 @@
 package com.simex.twin.adapter.out.scenario;
 
+import com.simex.twin.adapter.contract.ContractJson;
 import com.simex.twin.application.port.out.ScenarioRepository;
-import com.simex.twin.domain.control.alarm.AlarmCode;
 import com.simex.twin.domain.control.command.CommandType;
 import com.simex.twin.domain.control.command.MachineCommand;
 import com.simex.twin.domain.control.thermal.ControlMode;
@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,7 +74,7 @@ public final class ClasspathScenarioRepository implements ScenarioRepository {
                 .forEach(f -> faults.add(new Scenario.ScheduledFault(
                         f.required("atS").asDouble(),
                         FaultType.valueOf(f.required("type").asString()),
-                        params(f.path("params")),
+                        ContractJson.faultParams(f.path("params")),
                         f.has("durationS") ? Optional.of(f.get("durationS").asDouble()) : Optional.empty())));
         return new Scenario(
                 json.required("id").asString(),
@@ -95,41 +94,6 @@ public final class ClasspathScenarioRepository implements ScenarioRepository {
     }
 
     private static MachineCommand command(JsonNode json) {
-        JsonNode p = json.path("params");
-        return switch (CommandType.valueOf(json.required("type").asString())) {
-            case SET_SETPOINT ->
-                new MachineCommand.SetSetpoint(p.required("setpointC").asDouble());
-            case SET_PID ->
-                new MachineCommand.SetPid(
-                        p.required("kp").asDouble(),
-                        p.required("ki").asDouble(),
-                        p.required("kd").asDouble());
-            case SET_BELT_SPEED ->
-                new MachineCommand.SetBeltSpeed(p.required("pwmDuty").asDouble());
-            case SET_MODE ->
-                new MachineCommand.SetMode(
-                        ControlMode.valueOf(p.required("mode").asString()));
-            case START -> new MachineCommand.Start();
-            case STOP -> new MachineCommand.Stop();
-            case EMERGENCY_STOP -> new MachineCommand.EmergencyStop();
-            case RESET -> new MachineCommand.Reset();
-            case ACK_ALARM -> {
-                String code = p.required("code").asString();
-                yield new MachineCommand.AckAlarm(
-                        code.equals("ALL") ? Optional.empty() : Optional.of(AlarmCode.valueOf(code)));
-            }
-        };
-    }
-
-    /** Números como Double y textos como String: lo que espera {@code FaultFactory}. */
-    private static Map<String, Object> params(JsonNode json) {
-        Map<String, Object> params = new LinkedHashMap<>();
-        json.properties()
-                .forEach(e -> params.put(
-                        e.getKey(),
-                        e.getValue().isNumber()
-                                ? e.getValue().asDouble()
-                                : e.getValue().asString()));
-        return params;
+        return ContractJson.command(CommandType.valueOf(json.required("type").asString()), json.path("params"));
     }
 }

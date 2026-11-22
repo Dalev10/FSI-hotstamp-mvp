@@ -32,7 +32,12 @@ import java.util.function.Supplier;
 public final class SimulationEngine {
 
     /** Lo que se lee sin bloquear: el estado y la última telemetría (o la máquina en reposo si no hubo corridas). */
-    public record EngineView(SimulationStatus status, Optional<TelemetryFrame> latest, MachineSnapshot snapshot) {}
+    /** @param runStartedAt inicio de pared de la corrida actual (para {@code simTs}); vacío sin corridas */
+    public record EngineView(
+            SimulationStatus status,
+            Optional<TelemetryFrame> latest,
+            MachineSnapshot snapshot,
+            Optional<Instant> runStartedAt) {}
 
     private static final int MAX_MODE_BLOCK_TICKS = 1_000;
     private static final String NO_RUN = "No hay una corrida activa";
@@ -79,7 +84,7 @@ public final class SimulationEngine {
         MachineSnapshot idleSnapshot = new ScenarioRunner(idle, idle.seed(), plant, control, tick)
                 .machine()
                 .snapshot();
-        this.view = new AtomicReference<>(new EngineView(status(), Optional.empty(), idleSnapshot));
+        this.view = new AtomicReference<>(new EngineView(status(), Optional.empty(), idleSnapshot, Optional.empty()));
     }
 
     /** Lo llama cualquier hilo; se aplica en el próximo ciclo. */
@@ -144,8 +149,10 @@ public final class SimulationEngine {
             case EngineRequest.RemoveFault r ->
                 r.removed()
                         .complete(activeRun()
-                                .flatMap(c -> c.runner().machine().removeFault(r.faultId()))
-                                .isPresent());
+                                .map(c -> c.runner()
+                                        .machine()
+                                        .removeFault(r.faultId())
+                                        .isPresent()));
         }
     }
 
@@ -170,6 +177,9 @@ public final class SimulationEngine {
         RunContext context =
                 new RunContext(runIds.get(), seed, now, new ScenarioRunner(scenario, seed, plant, control, tick));
         run = Optional.of(context);
+        // La telemetría de la corrida anterior ya no describe esta.
+        view.set(new EngineView(
+                status(), Optional.empty(), context.runner().machine().snapshot(), Optional.of(now)));
         speedFactor = r.speedFactor();
         paused = false;
         ControlStatus initial = context.runner().machine().snapshot().control();
@@ -203,7 +213,8 @@ public final class SimulationEngine {
                 TelemetryFrame frame = assembler.telemetry(
                         context.runId(), context.startedAt(), context, speedFactor, result.snapshot(), now);
                 publisher.publishTelemetry(frame);
-                view.set(new EngineView(status(), Optional.of(frame), result.snapshot()));
+                view.set(new EngineView(
+                        status(), Optional.of(frame), result.snapshot(), Optional.of(context.startedAt())));
             }
             if (context.runner().finished()) {
                 endRun(context, DomainEvent.RunEndReason.COMPLETED);
@@ -225,7 +236,7 @@ public final class SimulationEngine {
     private void publishView() {
         EngineView current = view.get();
         MachineSnapshot snapshot = run.map(c -> c.runner().machine().snapshot()).orElse(current.snapshot());
-        view.set(new EngineView(status(), current.latest(), snapshot));
+        view.set(new EngineView(status(), current.latest(), snapshot, run.map(RunContext::startedAt)));
     }
 
     private Optional<RunContext> activeRun() {

@@ -2,8 +2,11 @@ package com.simex.twin.domain.machine;
 
 import com.simex.twin.domain.control.ControlStatus;
 import com.simex.twin.domain.fault.FaultType;
+import com.simex.twin.domain.shared.SimDuration;
 import com.simex.twin.domain.shared.SimTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Foto inmutable de la máquina tras un scan: lo que el adaptador convierte en telemetría.
@@ -31,5 +34,14 @@ public record MachineSnapshot(
             List<ActiveFault> activeFaults,
             long stampedOutOfWindow) {}
 
-    public record ActiveFault(String faultId, FaultType type, SimTime since) {}
+    /**
+     * @param params parámetros efectivos
+     * @param duration vacío: dura hasta que se retira
+     */
+    public record ActiveFault(
+            String faultId,
+            FaultType type,
+            SimTime since,
+            Map<String, Object> params,
+            Optional<SimDuration> duration) {}
 }

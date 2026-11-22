@@ -17,8 +17,8 @@ public interface FaultInjectionUseCase {
      */
     CompletableFuture<Optional<String>> inject(FaultType type, Map<String, Object> params, Optional<Double> durationS);
 
-    /** Se completa con {@code true} si la falla existía. */
-    CompletableFuture<Boolean> remove(String faultId);
+    /** Se completa vacío si no hay corrida activa; si no, con {@code true} si la falla existía. */
+    CompletableFuture<Optional<Boolean>> remove(String faultId);
 
     List<CatalogEntry> catalog();
 

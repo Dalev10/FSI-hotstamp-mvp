@@ -45,5 +45,6 @@ public sealed interface EngineRequest {
     record InjectFault(Fault fault, Optional<SimDuration> duration, CompletableFuture<Optional<String>> faultId)
             implements EngineRequest {}
 
-    record RemoveFault(String faultId, CompletableFuture<Boolean> removed) implements EngineRequest {}
+    /** Vacío si no hay corrida activa; si no, si la falla existía. */
+    record RemoveFault(String faultId, CompletableFuture<Optional<Boolean>> removed) implements EngineRequest {}
 }

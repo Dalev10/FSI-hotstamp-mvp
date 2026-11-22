@@ -4,9 +4,8 @@ Simulación determinista de la estampadora en caliente del ITO 2 (planta térmic
 lógica de control y seguridad. Expone telemetría y comandos por REST y WebSocket para el agente de IA y el dashboard.
 La especificación completa está en [`docs/plans/PLAN-01-gemelo-digital.md`](../docs/plans/PLAN-01-gemelo-digital.md).
 
-> Estado: **T8 (motor de simulación)**. El motor (`SimulationEngine` + hilo `sim-engine`) ya corre escenarios con
-> comandos, fallas, idempotencia y control de velocidad; falta exponerlo por REST y WebSocket (T9). Mientras tanto, el
-> perfil `stub` imita el contrato para que el agente y el dashboard puedan avanzar.
+> Estado: **T9 (adaptadores REST y WebSocket)**. El gemelo arranca la corrida `nominal` (semilla 42, ×1) y la expone
+> por `/api/twin/*` y `/ws/telemetry` según el contrato. Falta la operación (métricas, apagado ordenado y Compose: T10).
 
 ## Requisitos
 
@@ -40,18 +39,29 @@ contrato se hace primero allí. `ContractExamplesTest` valida los ejemplos, comp
 `src/test/resources/contract-invalid-cases.json` se rechacen y que cada `$ref` resuelva. Las pruebas leen la carpeta
 desde la propiedad `contracts.dir`, que Maven fija en `../contracts`.
 
-## Perfil `stub` (temporal, se elimina en T9)
+## API
 
-Reenvía `contracts/examples/telemetry*.json` por `/ws/telemetry` a 1 Hz, con `seq` consecutivo y `hello` al conectar.
-Quita `groundTruth` salvo con `?groundTruth=true`. Responde 202 `APPLIED` a `POST /api/twin/commands` y 204 a los
-latidos, sin aplicar nada.
+Las rutas, cuerpos y códigos están en `openapi.yaml` y `asyncapi.yaml`; `/v3/api-docs` publica lo implementado y
+`RestApiIntegrationTest` comprueba que coincida con el contrato. Ejemplos:
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=stub
-# Con Docker hay que montar los ejemplos, porque contracts/ no entra en la imagen:
-docker run --rm -p 8080:8080 -v "$PWD/../contracts:/contracts:ro" \
-  -e SPRING_PROFILES_ACTIVE=stub -e TWIN_STUB_EXAMPLESDIR=/contracts/examples twin-java
+curl localhost:8080/api/twin/state                     # snapshot (añade ?groundTruth=true para la verdad de planta)
+curl localhost:8080/api/twin/limits                    # límites de comandos
+curl -X POST localhost:8080/api/twin/sim/scenario -H 'Content-Type: application/json' \
+  -d '{"scenarioId":"frente-frio","seed":7,"speedFactor":10}'
+curl -X POST localhost:8080/api/twin/commands -H 'Content-Type: application/json' \
+  -d '{"commandId":"'"$(uuidgen)"'","type":"SET_SETPOINT","issuedBy":"agent","params":{"setpointC":64}}'
+curl -X POST localhost:8080/api/twin/sim/faults -H 'Content-Type: application/json' -d '{"type":"COLD_FRONT"}'
 ```
+
+- **Comandos**: 202 si se aplican, 409 si una regla los rechaza (`rule` dice cuál), 503 si el motor no responde en
+  `twin.commands.apply-timeout-ms`. Un `commandId` repetido devuelve la respuesta original con `Idempotent-Replay: true`.
+- **Errores**: RFC 9457 (`application/problem+json`) con `detail` en español: 400 para JSON o parámetros inválidos
+  (los campos desconocidos también), 404 si el escenario o la falla no existen y 409 para fallas sin corrida activa.
+- **WebSocket** (`/ws/telemetry`): `hello` al conectar y luego telemetría cada segundo simulado y eventos, con `seq`
+  consecutivo por vista. Sin `?groundTruth=true` no viajan el bloque `groundTruth`, los eventos `FAULT_*` ni el
+  `scenarioId` de `RUN_STARTED`. Un cliente lento no frena al motor: la cola de salida (10 000 mensajes) descarta la
+  telemetría más vieja, nunca un evento, y la sesión que excede 2 s o 512 KB de envío se cierra.
 
 ## Arquitectura
 
@@ -61,7 +71,7 @@ Hexagonal con un ciclo de scan tipo PLC en el dominio. Paquetes bajo `com.simex.
 |---|---|---|
 | `domain` | Planta (`plant`) y control (`control`), que solo se comunican por la imagen de proceso (`io`) | solo JDK y JSpecify |
 | `application` | Motor de simulación, casos de uso y puertos | `domain` |
-| `adapter` | REST, WebSocket, escenarios y reloj | `application`, `domain` |
+| `adapter` | REST, WebSocket, escenarios y reloj; `adapter.contract` es el JSON que comparten | `application`, `domain` |
 | `config` | Propiedades y cableado (`@Bean`) | todo |
 
 `ArchitectureTest` hace cumplir estas reglas en cada `verify`.

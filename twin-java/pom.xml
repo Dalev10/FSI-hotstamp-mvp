@@ -33,6 +33,7 @@
 		<palantir-java-format.version>2.103.0</palantir-java-format.version>
 		<jacoco.version>0.8.16</jacoco.version>
 		<json-schema-validator.version>3.0.9</json-schema-validator.version>
+		<springdoc.version>3.2.1</springdoc.version>
 		<!-- Pruebas etiquetadas @Tag("perf") solo corren con -Pperf -->
 		<surefire.excludedGroups>perf</surefire.excludedGroups>
 	</properties>
@@ -56,6 +57,11 @@
 		<dependency>
 			<groupId>org.jspecify</groupId>
 			<artifactId>jspecify</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+			<version>${springdoc.version}</version>
 		</dependency>
 
 		<dependency>
