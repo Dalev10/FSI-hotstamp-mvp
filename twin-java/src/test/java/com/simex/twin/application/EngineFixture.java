@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import tools.jackson.databind.json.JsonMapper;
 
 /** Motor y servicio con los escenarios reales, un reloj falso y un publicador que registra todo. */
@@ -32,6 +33,8 @@ public final class EngineFixture {
     public final SimulationEngine engine;
     public final SimulationService service;
     private final AtomicInteger runs = new AtomicInteger();
+    /** Ticks que el motor reportó a sus métricas. */
+    public final AtomicLong measuredTicks = new AtomicLong();
 
     public EngineFixture() {
         this(new FakeWallClock());
@@ -51,6 +54,7 @@ public final class EngineFixture {
                 new SimDuration(1000),
                 1000,
                 publisher,
+                nanos -> measuredTicks.incrementAndGet(),
                 wallClock,
                 () -> new UUID(0, runs.incrementAndGet()).toString(), // con forma de UUID, como pide el contrato
                 idleScenario());

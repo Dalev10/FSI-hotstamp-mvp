@@ -13,16 +13,20 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import tools.jackson.databind.JsonNode;
 
 /**
  * Cada endpoint de {@code openapi.yaml} con sus códigos, y cada cuerpo validado contra su componente. Sin autostart: el
  * gemelo arranca en reposo y solo {@link #theLifecycleOfARunThroughTheApi} inicia corridas.
  */
+@ExtendWith(OutputCaptureExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "twin.autostart.scenario=")
 class RestApiIntegrationTest {
 
@@ -34,7 +38,7 @@ class RestApiIntegrationTest {
     int port;
 
     @Test
-    void theLifecycleOfARunThroughTheApi() throws Exception {
+    void theLifecycleOfARunThroughTheApi(CapturedOutput output) throws Exception {
         // Antes de la primera corrida.
         JsonNode idle = ok(get("/api/twin/state"), "State");
         assertThat(idle.get("runId").isNull()).isTrue();
@@ -52,7 +56,9 @@ class RestApiIntegrationTest {
         HttpResponse<String> created =
                 post("/api/twin/sim/scenario", "{\"scenarioId\":\"nominal\",\"seed\":42,\"speedFactor\":60}");
         assertThat(created.statusCode()).isEqualTo(201);
-        valid(created, "RunCreated");
+        String runId = valid(created, "RunCreated").get("runId").asString();
+        // Los logs del hilo del motor llevan el runId (MDC).
+        assertThat(output.getAll()).contains("[runId=" + runId + "]").contains("Corrida iniciada: escenario nominal");
 
         String body = command("SET_BELT_SPEED", "agent", "{\"pwmDuty\":0.8}");
         HttpResponse<String> first = post("/api/twin/commands", body);

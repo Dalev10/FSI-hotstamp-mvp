@@ -119,7 +119,8 @@ public record TwinProperties(
             @Positive long tickMs,
             @Positive long wallCycleMs,
             @Positive int speedFactor,
-            @Positive int maxSpeedFactor) {
+            @Positive int maxSpeedFactor,
+            @Positive long shutdownTimeoutMs) {
 
         @AssertTrue(message = "speed-factor no puede superar max-speed-factor")
         public boolean isSpeedFactorWithinMax() {

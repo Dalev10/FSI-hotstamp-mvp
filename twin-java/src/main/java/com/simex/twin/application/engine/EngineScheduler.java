@@ -1,10 +1,11 @@
 package com.simex.twin.application.engine;
 
 import com.simex.twin.domain.shared.SimDuration;
-import java.lang.System.Logger.Level;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * El hilo {@code sim-engine}: único que muta el dominio. Llama a {@link SimulationEngine#runCycle} a tasa fija de pared;
@@ -12,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class EngineScheduler implements AutoCloseable {
 
-    private static final System.Logger LOG = System.getLogger(EngineScheduler.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(EngineScheduler.class);
 
     private final SimulationEngine engine;
     private final long cycleMs;
@@ -46,7 +47,7 @@ public final class EngineScheduler implements AutoCloseable {
             engine.runCycle();
         } catch (RuntimeException e) {
             // Una excepción sin capturar cancelaría la tarea periódica: el motor quedaría detenido en silencio.
-            LOG.log(Level.ERROR, "Fallo en el ciclo del motor", e);
+            LOG.error("Fallo en el ciclo del motor", e);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.simex.twin.application.engine;
 
 import com.simex.twin.application.engine.EngineRequest.CommandOutcome;
 import com.simex.twin.application.engine.Frames.TelemetryFrame;
+import com.simex.twin.application.port.out.EngineMetrics;
 import com.simex.twin.application.port.out.TelemetryPublisher;
 import com.simex.twin.application.port.out.WallClock;
 import com.simex.twin.application.service.TelemetryAssembler;
@@ -23,6 +24,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Motor síncrono: no sabe de hilos. En cada ciclo vacía la bandeja (también en pausa), avanza {@code speedFactor}
@@ -39,6 +43,11 @@ public final class SimulationEngine {
             MachineSnapshot snapshot,
             Optional<Instant> runStartedAt) {}
 
+    /** Clave del {@code runId} en el MDC de los logs. */
+    public static final String MDC_RUN_ID = "runId";
+
+    // SLF4J y no System.Logger: JUL suelta sus handlers en su propio shutdown hook y se perdería el log del cierre.
+    private static final Logger LOG = LoggerFactory.getLogger(SimulationEngine.class);
     private static final int MAX_MODE_BLOCK_TICKS = 1_000;
     private static final String NO_RUN = "No hay una corrida activa";
 
@@ -47,6 +56,7 @@ public final class SimulationEngine {
     private final SimDuration tick;
     private final long telemetryPeriodMs;
     private final TelemetryPublisher publisher;
+    private final EngineMetrics metrics;
     private final WallClock clock;
     private final Supplier<String> runIds;
     private final IdempotencyStore idempotency;
@@ -69,6 +79,7 @@ public final class SimulationEngine {
             SimDuration telemetryPeriod,
             int idempotencyCapacity,
             TelemetryPublisher publisher,
+            EngineMetrics metrics,
             WallClock clock,
             Supplier<String> runIds,
             Scenario idle) {
@@ -77,6 +88,7 @@ public final class SimulationEngine {
         this.tick = tick;
         this.telemetryPeriodMs = telemetryPeriod.ms();
         this.publisher = publisher;
+        this.metrics = metrics;
         this.clock = clock;
         this.runIds = runIds;
         this.idempotency = new IdempotencyStore(idempotencyCapacity);
@@ -177,6 +189,8 @@ public final class SimulationEngine {
         RunContext context =
                 new RunContext(runIds.get(), seed, now, new ScenarioRunner(scenario, seed, plant, control, tick));
         run = Optional.of(context);
+        MDC.put(MDC_RUN_ID, context.runId()); // los logs del hilo del motor llevan la corrida
+        LOG.info("Corrida iniciada: escenario {}, semilla {}, x{}", scenario.id(), seed, r.speedFactor());
         // La telemetría de la corrida anterior ya no describe esta.
         view.set(new EngineView(
                 status(), Optional.empty(), context.runner().machine().snapshot(), Optional.of(now)));
@@ -207,7 +221,9 @@ public final class SimulationEngine {
     private void advance(int ticks) {
         RunContext context = run.orElseThrow();
         for (int i = 0; i < ticks && !context.ended(); i++) {
+            long started = System.nanoTime();
             ScanResult result = context.runner().step(now.toEpochMilli());
+            metrics.tick(System.nanoTime() - started);
             result.events().forEach(event -> publishEvent(context, event));
             if (result.snapshot().simTime().ms() % telemetryPeriodMs == 0) {
                 TelemetryFrame frame = assembler.telemetry(
@@ -226,6 +242,8 @@ public final class SimulationEngine {
         publishEvent(context, new DomainEvent.RunEnded(reason));
         context.end();
         paused = true;
+        LOG.info("Corrida terminada: {}", reason);
+        MDC.remove(MDC_RUN_ID);
     }
 
     private void publishEvent(RunContext context, DomainEvent event) {
