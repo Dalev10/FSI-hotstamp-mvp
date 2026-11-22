@@ -1,0 +1,30 @@
+{
+  "id": "desgaste-motor",
+  "description": "El motor se desgasta (fricción ×1,3 en 10 min) desde los 600 s",
+  "seed": 42,
+  "durationSimS": 3600,
+  "controlMode": "PID",
+  "initialConditions": {
+    "platenTempC": 25.0,
+    "ambientC": 25.0
+  },
+  "arrivals": {
+    "meanIntervalS": 10,
+    "metalRatio": 0.2
+  },
+  "ambientProfile": [],
+  "actions": [
+    {
+      "atS": 0,
+      "command": {
+        "type": "START"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "atS": 600,
+      "type": "MOTOR_WEAR"
+    }
+  ]
+}
