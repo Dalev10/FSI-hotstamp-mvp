@@ -1,0 +1,42 @@
+# La imagen oficial de Nginx sustituye ${TWIN_API_KEY} al arrancar; las variables propias de Nginx no se tocan.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+upstream twin {
+    server twin:8080;
+}
+
+server {
+    listen 8080;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    # Comandos y simulación: solo con la clave.
+    location ~ ^/api/twin/(commands|sim/) {
+        default_type application/problem+json;  # para el 401; las respuestas del gemelo traen su tipo
+        if ($http_x_api_key != "${TWIN_API_KEY}") {
+            return 401 '{"title":"Unauthorized","status":401,"detail":"Falta X-API-Key o no es válida"}';
+        }
+        proxy_pass http://twin;
+    }
+
+    location /api/twin/ {
+        proxy_pass http://twin;
+    }
+
+    location = /ws/telemetry {
+        proxy_pass http://twin;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 1h;
+    }
+
+    location / {
+        default_type application/problem+json;
+        return 404 '{"title":"Not Found","status":404,"detail":"Ruta no expuesta por el gateway"}';
+    }
+}

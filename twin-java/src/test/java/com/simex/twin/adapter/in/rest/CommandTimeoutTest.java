@@ -9,8 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.simex.twin.application.port.in.ApplyCommandUseCase;
 import com.simex.twin.application.port.in.HeartbeatUseCase;
+import com.simex.twin.application.port.in.QueryStateUseCase;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -29,6 +31,10 @@ class CommandTimeoutTest {
 
     @MockitoBean
     HeartbeatUseCase heartbeats;
+
+    // Lo usa RunIdMdcFilter, que el slice web también carga.
+    @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
+    QueryStateUseCase query;
 
     @Test
     void anEngineThatDoesNotAnswerGives503() throws Exception {

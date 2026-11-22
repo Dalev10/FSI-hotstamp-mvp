@@ -4,10 +4,12 @@ import com.simex.twin.adapter.contract.ContractMapper;
 import com.simex.twin.application.engine.Frames.Envelope;
 import com.simex.twin.application.engine.Frames.EventFrame;
 import com.simex.twin.application.engine.Frames.TelemetryFrame;
+import com.simex.twin.application.engine.SimulationEngine;
 import com.simex.twin.application.engine.SimulationEngine.EngineView;
 import com.simex.twin.application.port.out.TelemetryPublisher;
 import com.simex.twin.application.port.out.WallClock;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -15,12 +17,14 @@ import java.util.Optional;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -38,10 +42,13 @@ public final class WebSocketTelemetryPublisher implements TelemetryPublisher, Au
     // Límites de envío por sesión de la sección 3.5 del plan.
     private static final int SEND_TIME_LIMIT_MS = 2_000;
     private static final int BUFFER_SIZE_LIMIT_BYTES = 512 * 1024;
+    private static final long DRAIN_POLL_MS = 10;
 
     private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
     private final int capacity;
     private final AtomicLong dropped = new AtomicLong();
+    // Encolados y aún no difundidos (incluye el que se está enviando): permite vaciar la cola al apagar.
+    private final AtomicInteger pending = new AtomicInteger();
     private final Map<String, Subscriber> subscribers = new ConcurrentHashMap<>();
     private final ObjectMapper json;
     private final ContractMapper mapper = new ContractMapper();
@@ -81,6 +88,37 @@ public final class WebSocketTelemetryPublisher implements TelemetryPublisher, Au
         enqueue(frame);
     }
 
+    /** Sesiones suscritas ({@code twin.ws.sessions}). */
+    public int sessions() {
+        return subscribers.size();
+    }
+
+    /** Espera a que se difunda lo encolado, como mucho hasta {@code deadline}; devuelve si se vació. */
+    public boolean awaitDrained(Instant deadline) throws InterruptedException {
+        while (pending.get() > 0) {
+            if (Instant.now().isAfter(deadline)) {
+                return false;
+            }
+            Thread.sleep(DRAIN_POLL_MS);
+        }
+        return true;
+    }
+
+    /** Cierra todas las sesiones (al apagar: {@code GOING_AWAY}). */
+    public void closeSessions(CloseStatus status) {
+        for (Subscriber subscriber : subscribers.values()) {
+            subscribers.remove(subscriber.session().getId());
+            try {
+                subscriber.session().close(status);
+            } catch (IOException | RuntimeException e) {
+                log.debug(
+                        "No se pudo cerrar la sesión {}: {}",
+                        subscriber.session().getId(),
+                        e.getMessage());
+            }
+        }
+    }
+
     /** Telemetrías descartadas por cola llena desde el arranque. */
     public long dropped() {
         return dropped.get();
@@ -102,10 +140,12 @@ public final class WebSocketTelemetryPublisher implements TelemetryPublisher, Au
                 if (it.next() instanceof TelemetryFrame) {
                     it.remove();
                     dropped.incrementAndGet();
+                    pending.decrementAndGet();
                     break;
                 }
             }
         }
+        pending.incrementAndGet();
         queue.add(item);
     }
 
@@ -122,6 +162,8 @@ public final class WebSocketTelemetryPublisher implements TelemetryPublisher, Au
             } catch (RuntimeException e) {
                 // Una excepción sin capturar mataría el hilo y dejaría de difundir para siempre.
                 log.warn("No se pudo difundir {}", item.getClass().getSimpleName(), e);
+            } finally {
+                pending.decrementAndGet();
             }
         }
     }
@@ -152,6 +194,7 @@ public final class WebSocketTelemetryPublisher implements TelemetryPublisher, Au
     private void track(@Nullable Envelope publicEnvelope, Envelope groundTruthEnvelope) {
         if (!groundTruthEnvelope.runId().equals(lastRunId)) {
             lastRunId = groundTruthEnvelope.runId();
+            MDC.put(SimulationEngine.MDC_RUN_ID, lastRunId);
             lastPublicSeq = 0;
         }
         lastGroundTruthSeq = groundTruthEnvelope.seq();

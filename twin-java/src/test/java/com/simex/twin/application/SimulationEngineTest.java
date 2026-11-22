@@ -49,6 +49,8 @@ class SimulationEngineTest {
         assertThat(f.engine.view().status().simTimeMs()).isEqualTo(10_000);
         assertThat(f.publisher.telemetry).hasSize(10); // una por segundo simulado
         assertThat(f.publisher.telemetry.getLast().publicEnvelope().simTimeMs()).isEqualTo(10_000);
+
+        assertThat(f.measuredTicks).hasValue(100); // cada tick llega a twin.tick.duration
     }
 
     @Test

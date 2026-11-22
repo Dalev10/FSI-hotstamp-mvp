@@ -74,6 +74,26 @@ class WebSocketIntegrationTest {
         assertThat(groundTruthMessages)
                 .filteredOn(m -> m.get("type").asString().equals("telemetry"))
                 .allSatisfy(m -> assertThat(m.has("groundTruth")).isTrue());
+
+        // Métricas de la T10 en Actuator.
+        assertThat(metric("twin.ws.sessions")).isEqualTo(2.0);
+        assertThat(metric("twin.telemetry.dropped")).isZero();
+        assertThat(metric("twin.tick.duration")).isPositive(); // COUNT: ticks medidos
+    }
+
+    private double metric(String name) throws Exception {
+        HttpResponse<String> response = HttpClient.newHttpClient()
+                .send(
+                        HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/actuator/metrics/" + name))
+                                .build(),
+                        HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        return Contracts.JSON
+                .readTree(response.body())
+                .get("measurements")
+                .get(0)
+                .get("value")
+                .asDouble();
     }
 
     /** Lee hasta ver la falla en la vista groundTruth (o {@value #MESSAGES} mensajes); valida esquema y seq. */
