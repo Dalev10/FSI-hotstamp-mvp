@@ -464,7 +464,7 @@ POST /api/twin/commands
 
 ## 6. Configuración (`application.yml`)
 
-Toda clave `twin.*` se puede sobrescribir por variable de entorno, por ejemplo `TWIN_AUTOSTART_SCENARIO` o `TWIN_ENGINE_SPEEDFACTOR`. `TwinProperties` es un record anidado con `@ConfigurationProperties("twin")` y `@Validated`.
+Toda clave `twin.*` se puede sobrescribir por variable de entorno, por ejemplo `TWIN_AUTOSTART_SCENARIO` o `TWIN_AUTOSTART_SPEEDFACTOR`. `TwinProperties` es un record anidado con `@ConfigurationProperties("twin")` y `@Validated`.
 
 ```yaml
 server: { port: 8080, shutdown: graceful }
@@ -475,7 +475,7 @@ management:
   endpoints.web.exposure.include: health,info,metrics
   endpoint.health.probes.enabled: true
 twin:
-  engine:      { tick-ms: 100, wall-cycle-ms: 100, speed-factor: 1, max-speed-factor: 60 }
+  engine:      { tick-ms: 100, wall-cycle-ms: 100, max-speed-factor: 60, shutdown-timeout-ms: 5000 }
   telemetry:   { period-sim-ms: 1000, allowed-origins: "*", outbound-queue-capacity: 10000 }
   autostart:   { scenario: nominal, seed: 42, speed-factor: 1 }        # scenario vacío = no arrancar
   process:     { window-min-c: 50.0, window-max-c: 75.0, band-hysteresis-c: 0.5, stable-ms: 2000,
