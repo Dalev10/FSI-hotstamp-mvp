@@ -4,8 +4,8 @@ Simulación determinista de la estampadora en caliente del ITO 2 (planta térmic
 lógica de control y seguridad. Expone telemetría y comandos por REST y WebSocket para el agente de IA y el dashboard.
 La especificación completa está en [`docs/plans/PLAN-01-gemelo-digital.md`](../docs/plans/PLAN-01-gemelo-digital.md).
 
-> Estado: **T6 (máquina completa)**. El dominio ya simula la máquina entera: planta, secuencia, seguridad, alarmas,
-> comandos y eventos. El servicio todavía no la expone; el perfil `stub` imita el contrato para que el agente y el
+> Estado: **T7 (fallas y escenarios)**. El dominio ya simula la máquina entera con fallas y 9 escenarios: planta,
+> secuencia, seguridad, alarmas, comandos y eventos. El servicio todavía no la expone; el perfil `stub` imita el contrato para que el agente y el
 > dashboard puedan avanzar.
 
 ## Requisitos

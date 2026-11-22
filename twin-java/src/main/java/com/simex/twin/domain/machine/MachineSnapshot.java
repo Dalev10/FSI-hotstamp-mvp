@@ -1,7 +1,9 @@
 package com.simex.twin.domain.machine;
 
 import com.simex.twin.domain.control.ControlStatus;
+import com.simex.twin.domain.fault.FaultType;
 import com.simex.twin.domain.shared.SimTime;
+import java.util.List;
 
 /**
  * Foto inmutable de la máquina tras un scan: lo que el adaptador convierte en telemetría.
@@ -22,5 +24,12 @@ public record MachineSnapshot(
      *
      * @param stampedOutOfWindow estampados con la temperatura real del troquel fuera de la ventana
      */
-    public record GroundTruth(double platenTempC, double ambientC, double heaterEfficiency, long stampedOutOfWindow) {}
+    public record GroundTruth(
+            double platenTempC,
+            double ambientC,
+            double heaterEfficiency,
+            List<ActiveFault> activeFaults,
+            long stampedOutOfWindow) {}
+
+    public record ActiveFault(String faultId, FaultType type, SimTime since) {}
 }

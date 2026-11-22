@@ -7,7 +7,9 @@ import com.simex.twin.domain.control.command.IssuedCommand.Issuer;
 import com.simex.twin.domain.control.command.Rule;
 import com.simex.twin.domain.control.safety.Supervisor;
 import com.simex.twin.domain.control.sequence.MachineState;
+import com.simex.twin.domain.fault.FaultType;
 import com.simex.twin.domain.plant.conveyor.ExitResult;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,4 +40,16 @@ public sealed interface DomainEvent {
             implements DomainEvent {}
 
     record SupervisorChanged(Supervisor from, Supervisor to) implements DomainEvent {}
+
+    /**
+     * Solo para la vista groundTruth.
+     *
+     * @param params parámetros efectivos, con los valores por defecto aplicados
+     * @param durationS vacío: dura hasta que se retira
+     */
+    record FaultInjected(String faultId, FaultType type, Map<String, Object> params, Optional<Double> durationS)
+            implements DomainEvent {}
+
+    /** Solo para la vista groundTruth. */
+    record FaultCleared(String faultId, FaultType type) implements DomainEvent {}
 }

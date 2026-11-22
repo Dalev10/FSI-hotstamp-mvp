@@ -16,7 +16,7 @@ import com.simex.twin.domain.control.command.Rule;
 import com.simex.twin.domain.control.safety.Supervisor;
 import com.simex.twin.domain.control.sequence.MachineState;
 import com.simex.twin.domain.event.DomainEvent;
-import com.simex.twin.domain.plant.PlantModifiers;
+import com.simex.twin.domain.fault.FaultInjector;
 import com.simex.twin.domain.plant.SimulatedPlant;
 import com.simex.twin.domain.plant.conveyor.ArrivalProfile;
 import com.simex.twin.domain.plant.conveyor.ExitResult;
@@ -130,6 +130,7 @@ class StampingMachineTest {
 
     private static StampingMachine machine() {
         RandomStreams streams = new RandomStreams(42);
+        FaultInjector faults = new FaultInjector(42);
         SimulatedPlant plant = new SimulatedPlant(
                 DefaultParameters.plant(),
                 streams,
@@ -137,12 +138,12 @@ class StampingMachineTest {
                         streams.get(RandomStreams.Name.ARRIVALS), streams.get(RandomStreams.Name.PIECE_TYPE)),
                 new ArrivalProfile(10, 0.2),
                 ms -> 25.0,
-                PlantModifiers::neutral,
+                faults::current,
                 TICK);
         ControlParameters parameters = DefaultParameters.control();
         ControlLogic control = new ControlLogic(
                 parameters, TICK, CommandRules.standard(parameters.commandLimits()), plant.readInputs());
-        return new StampingMachine(control, plant, parameters.process());
+        return new StampingMachine(control, plant, parameters.process(), faults);
     }
 
     private static IssuedCommand command(Issuer issuer, MachineCommand command) {

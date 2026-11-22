@@ -1,0 +1,34 @@
+{
+  "id": "fuga-neumatica",
+  "description": "Fuga neumática en ambos cilindros (carrera ×1,5) desde los 600 s",
+  "seed": 42,
+  "durationSimS": 3600,
+  "controlMode": "PID",
+  "initialConditions": {
+    "platenTempC": 25.0,
+    "ambientC": 25.0
+  },
+  "arrivals": {
+    "meanIntervalS": 10,
+    "metalRatio": 0.2
+  },
+  "ambientProfile": [],
+  "actions": [
+    {
+      "atS": 0,
+      "command": {
+        "type": "START"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "atS": 600,
+      "type": "PNEUMATIC_LEAK",
+      "params": {
+        "cylinder": "BOTH",
+        "strokeFactor": 1.5
+      }
+    }
+  ]
+}

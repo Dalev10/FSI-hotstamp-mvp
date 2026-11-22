@@ -6,6 +6,8 @@ import com.simex.twin.domain.control.ProcessParameters;
 import com.simex.twin.domain.control.command.CommandResult;
 import com.simex.twin.domain.control.command.IssuedCommand;
 import com.simex.twin.domain.event.DomainEvent;
+import com.simex.twin.domain.fault.Fault;
+import com.simex.twin.domain.fault.FaultInjector;
 import com.simex.twin.domain.io.ProcessOutputs;
 import com.simex.twin.domain.plant.PlantEvent;
 import com.simex.twin.domain.plant.SimulatedPlant;
@@ -25,6 +27,7 @@ public final class StampingMachine {
     private final ControlLogic control;
     private final SimulatedPlant plant;
     private final ProcessParameters process;
+    private final FaultInjector faults;
     private final EnergyMeter energy = new EnergyMeter();
     private final List<DomainEvent> pending = new ArrayList<>();
     private Counters counters = Counters.ZERO;
@@ -33,10 +36,15 @@ public final class StampingMachine {
     private SimTime now = SimTime.ZERO;
     private MachineSnapshot snapshot;
 
-    public StampingMachine(ControlLogic control, SimulatedPlant plant, ProcessParameters process) {
+    /**
+     * @param faults el mismo inyector cuyos modificadores consulta la planta
+     */
+    public StampingMachine(
+            ControlLogic control, SimulatedPlant plant, ProcessParameters process, FaultInjector faults) {
         this.control = control;
         this.plant = plant;
         this.process = process;
+        this.faults = faults;
         this.snapshot = buildSnapshot();
     }
 
@@ -61,6 +69,29 @@ public final class StampingMachine {
         return result;
     }
 
+    /** Inyecta una falla desde ahora; su efecto empieza en este mismo tick. */
+    public FaultInjector.ActiveFault injectFault(Fault fault, Optional<SimDuration> duration) {
+        FaultInjector.ActiveFault active = faults.inject(fault, duration, now);
+        pending.add(new DomainEvent.FaultInjected(
+                active.faultId(),
+                fault.type(),
+                fault.params(),
+                active.duration().map(SimDuration::seconds)));
+        return active;
+    }
+
+    /** Retira una falla activa; vacío si no existe. */
+    public Optional<FaultInjector.ActiveFault> removeFault(String faultId) {
+        Optional<FaultInjector.ActiveFault> removed = faults.remove(faultId);
+        removed.ifPresent(f ->
+                pending.add(new DomainEvent.FaultCleared(f.faultId(), f.fault().type())));
+        return removed;
+    }
+
+    public SimTime now() {
+        return now;
+    }
+
     public void heartbeat(long wallMs) {
         List<ControlEvent> controlEvents = new ArrayList<>();
         control.heartbeat(wallMs, controlEvents);
@@ -73,6 +104,9 @@ public final class StampingMachine {
      * @param wallNowMs tiempo de pared, solo para el watchdog
      */
     public ScanResult scan(SimDuration dt, long wallNowMs) {
+        faults.update(now)
+                .forEach(f -> pending.add(
+                        new DomainEvent.FaultCleared(f.faultId(), f.fault().type())));
         List<ControlEvent> controlEvents = new ArrayList<>();
         ProcessOutputs outputs = control.scan(plant.readInputs(), now, wallNowMs, controlEvents);
         plant.writeOutputs(outputs);
@@ -144,6 +178,13 @@ public final class StampingMachine {
                 energy.heaterWh(),
                 energy.motorWh(),
                 new MachineSnapshot.GroundTruth(
-                        plant.platenTempC(), plant.realAmbientC(), plant.heaterEfficiency(), stampedOutOfWindow));
+                        plant.platenTempC(),
+                        plant.realAmbientC(),
+                        plant.heaterEfficiency(),
+                        faults.active().stream()
+                                .map(f -> new MachineSnapshot.ActiveFault(
+                                        f.faultId(), f.fault().type(), f.startedAt()))
+                                .toList(),
+                        stampedOutOfWindow));
     }
 }

@@ -1,0 +1,30 @@
+{
+  "id": "frente-frio",
+  "description": "Frente frío desde los 600 s: el ambiente baja 10 °C y aumentan las pérdidas",
+  "seed": 42,
+  "durationSimS": 3600,
+  "controlMode": "PID",
+  "initialConditions": {
+    "platenTempC": 25.0,
+    "ambientC": 25.0
+  },
+  "arrivals": {
+    "meanIntervalS": 10,
+    "metalRatio": 0.2
+  },
+  "ambientProfile": [],
+  "actions": [
+    {
+      "atS": 0,
+      "command": {
+        "type": "START"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "atS": 600,
+      "type": "COLD_FRONT"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "nominal",
+  "description": "Operación nominal sin fallas",
+  "seed": 42,
+  "durationSimS": 3600,
+  "controlMode": "PID",
+  "initialConditions": {
+    "platenTempC": 25.0,
+    "ambientC": 25.0
+  },
+  "arrivals": {
+    "meanIntervalS": 10,
+    "metalRatio": 0.2
+  },
+  "ambientProfile": [],
+  "actions": [
+    {
+      "atS": 0,
+      "command": {
+        "type": "START"
+      }
+    }
+  ],
+  "faults": []
+}
