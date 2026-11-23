@@ -1,2 +1,8 @@
 # Secretos locales de docker compose
 .env
+
+# Dependencias locales y registros de la demo
+.venv/
+.simex-tools/
+.simex-data/
+__pycache__/

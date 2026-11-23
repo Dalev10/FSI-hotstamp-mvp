@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173a2c">
+  <title>Simex · Supervisión de estampado</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/dashboard.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="frame header-inner">
+      <a href="/" class="brand" aria-label="Simex, inicio">Simex<span>.</span></a>
+      <span class="header-divider" aria-hidden="true"></span>
+      <span class="header-title">Supervisión de estampado en caliente</span>
+      <span id="connection" class="connection" role="status">Conectando con el gemelo</span>
+    </div>
+  </header>
+  <main class="frame">
+    <section class="run-heading" aria-labelledby="run-title">
+      <div>
+        <p class="eyebrow">Gemelo digital · Simulación local</p>
+        <h1 id="run-title">Estampadora en vivo</h1>
+        <p id="run-description" class="muted">Esperando el estado de la máquina.</p>
+      </div>
+      <dl class="run-status">
+        <div><dt>Máquina</dt><dd id="machine">—</dd></div>
+        <div><dt>Tiempo simulado</dt><dd id="clock">—</dd></div>
+        <div><dt>Supervisión</dt><dd id="active-mode">Sombra</dd></div>
+      </dl>
+    </section>
+
+    <div id="notice" class="notice" role="status" hidden></div>
+    <form id="run-form" class="controls" aria-label="Controles de la simulación">
+      <label>Escenario
+        <select id="scenario" name="scenario">
+          <option value="nominal">Operación normal</option>
+          <option value="ruido-sensor">Ruido de sensor</option>
+          <option value="frente-frio">Frente frío</option>
+          <option value="termocupla-abierta">Termocupla abierta</option>
+        </select>
+      </label>
+      <label>Modo del agente
+        <select id="mode" name="mode">
+          <option value="shadow">Sombra · solo propone</option>
+          <option value="auto">Automático · aplica ajustes</option>
+        </select>
+      </label>
+      <label>Semilla <input id="seed" name="seed" type="number" min="0" max="2147483647" value="42" required></label>
+      <label>Velocidad
+        <select id="speed" name="speed">
+          <option value="1">×1</option><option value="10" selected>×10</option>
+          <option value="30">×30</option><option value="60">×60</option>
+        </select>
+      </label>
+      <button id="launch" type="submit" disabled>Iniciar escenario</button>
+      <button id="change-mode" class="secondary" type="button" disabled>Cambiar modo en vivo</button>
+    </form>
+    <p id="feedback" class="feedback" role="status" hidden></p>
+
+    <section class="live-grid" aria-label="Mediciones y alarmas">
+      <article class="panel chart-panel">
+        <div class="panel-title">
+          <h2>Temperatura del sello</h2>
+          <span id="band-label" class="muted">Ventana de estampado</span>
+        </div>
+        <dl class="measurements">
+          <div><dt>Medida</dt><dd id="temp">—</dd></div>
+          <div><dt>Objetivo</dt><dd id="setpoint">—</dd></div>
+          <div><dt>Ambiente</dt><dd id="ambient">—</dd></div>
+          <div><dt>Ciclo útil de calefacción</dt><dd id="duty">—</dd></div>
+        </dl>
+        <canvas id="chart" role="img" aria-label="Historial de temperatura medida y objetivo, con la ventana de estampado, ajustes y alarmas."></canvas>
+        <ul class="legend" aria-label="Leyenda de la gráfica">
+          <li><span class="key measured"></span>Medida</li>
+          <li><span class="key target"></span>Objetivo</li>
+          <li><span class="key process"></span>Ventana</li>
+          <li><span class="key adjustment"></span>Ajuste</li>
+          <li><span class="key alarm"></span>Alarma</li>
+        </ul>
+      </article>
+
+      <article class="panel alarm-panel">
+        <div class="panel-title"><h2>Alarmas</h2><span id="alarm-count" class="count">0</span></div>
+        <div id="alarms" aria-live="polite"><p class="muted">Esperando datos de seguridad.</p></div>
+        <div class="outputs">
+          <h3>Salidas del gemelo</h3>
+          <dl>
+            <div><dt>Resistencia</dt><dd id="heater">—</dd></div>
+            <div><dt>Banda</dt><dd id="belt">—</dd></div>
+            <div><dt>Pistón de descarte</dt><dd id="discard">—</dd></div>
+            <div><dt>Pistón de estampado</dt><dd id="stamp">—</dd></div>
+          </dl>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel decision-panel" aria-labelledby="decision-heading">
+      <div class="panel-title">
+        <h2 id="decision-heading">Última decisión</h2>
+        <span id="decision-status" class="badge" hidden></span>
+      </div>
+      <div id="decision"><p class="muted">El agente está reuniendo mediciones para formar una referencia.</p></div>
+      <details id="history" hidden>
+        <summary>Historial de la corrida</summary>
+        <ol id="timeline"></ol>
+      </details>
+    </section>
+
+    <section class="panel comparison-panel" aria-labelledby="comparison-heading">
+      <div class="panel-title compare-title">
+        <div>
+          <h2 id="comparison-heading">Comparación de corridas</h2>
+          <p class="muted">Control heredado, regulador proporcional, integral y derivativo (PID), y PID con agente.</p>
+        </div>
+        <button id="compare" class="secondary" type="button" disabled>Ejecutar comparación</button>
+      </div>
+      <p id="comparison-progress" class="muted" role="status" hidden></p>
+      <p id="comparison-meta" class="comparison-meta muted">Las corridas usan el escenario, la semilla y la velocidad seleccionados.</p>
+      <label id="experiment-label" class="experiment-select" hidden>Corridas registradas <select id="experiments"></select></label>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Indicadores de las corridas">
+        <table>
+          <thead><tr>
+            <th scope="col">Control</th><th scope="col">Piezas/h</th><th scope="col">En ventana</th>
+            <th scope="col">Energía (kWh)</th><th scope="col">Espera media</th>
+            <th scope="col">Metales escapados</th><th scope="col">Muestras faltantes</th>
+            <th scope="col">Error / variación térmica</th><th scope="col">Decisión / ajuste</th><th scope="col">Resultado</th>
+          </tr></thead>
+          <tbody id="results"><tr><td colspan="10">Aún no hay corridas de comparación.</td></tr></tbody>
+        </table>
+      </div>
+      <p id="ties" class="muted" hidden></p>
+      <p class="muted metric-note">En ventana usa las muestras de operación. El error medido y la variación del ciclo útil se calculan desde el minuto 15. kWh significa kilovatios hora y pp, puntos porcentuales.</p>
+      <div class="downloads">
+        <a href="/api/files/resultados.csv" download>Descargar corridas locales</a>
+        <a id="reference-file" href="/api/files/referencia.csv" download hidden>Descargar comparación de referencia</a>
+        <a id="decisions-file" href="/api/files/decisiones.jsonl" download hidden>Descargar decisiones</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

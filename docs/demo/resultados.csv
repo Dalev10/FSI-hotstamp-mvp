@@ -1,0 +1,4 @@
+experiment,arm,runId,scenario,seed,speed,durationS,status,samples,samplesMissing,streamGaps,operatingSamples,stamped,piecesPerHour,inBandPct,kwh,waitMeanS,metalEscaped,lateErrorC,lateDutySdPp,decisionAtS,appliedAtS,detectionDelayS,adjustments,result
+ec10f121-a48d-4c88-8cb0-16bfc51c0b2e,LEGACY,1300ab7b-3ebf-40f7-91ed-b3055a21fd76,ruido-sensor,42,60,3600.0,complete,3600,0,0,3436,186,186.0,73.778,0.4366,13.93,0,11.4768,43.0143,,,,0,no_adjustment
+ec10f121-a48d-4c88-8cb0-16bfc51c0b2e,PID,293658c6-2c8b-4a5f-967a-93c604bd9050,ruido-sensor,42,60,3600.0,complete,3600,0,0,3436,295,295.0,100.0,0.6913,0.1,1,1.2307,15.8995,,,,0,no_adjustment
+ec10f121-a48d-4c88-8cb0-16bfc51c0b2e,AGENT,4b33ca1e-b227-40d3-a686-7064d478034e,ruido-sensor,42,60,3600.0,complete,3600,0,0,3436,295,295.0,100.0,0.691,0.1,1,1.2328,13.5411,704.0,708.1,104.0,1,verified
